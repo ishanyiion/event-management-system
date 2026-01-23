@@ -39,14 +39,21 @@ const LandingPage = () => {
             <section className="space-y-8">
                 <div className="flex items-center justify-between">
                     <h2 className="text-3xl font-bold text-slate-900">Popular Categories</h2>
-                    <button className="text-primary-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
+                    <button
+                        onClick={() => navigate('/events')}
+                        className="text-primary-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all"
+                    >
                         See all categories <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
                     {['Wedding', 'Corporate', 'Music', 'Birthday', 'Workshop'].map((cat) => (
-                        <div key={cat} className="group relative h-40 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary-500 hover:shadow-xl transition-all cursor-pointer">
+                        <div
+                            key={cat}
+                            onClick={() => navigate('/events')}
+                            className="group relative h-40 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary-500 hover:shadow-xl transition-all cursor-pointer"
+                        >
                             <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-all">
                                 <Calendar className="w-6 h-6" />
                             </div>
@@ -72,7 +79,12 @@ const LandingPage = () => {
                                 </li>
                             ))}
                         </ul>
-                        <button className="btn-primary mt-4">Join as Organizer</button>
+                        <button
+                            onClick={() => navigate('/register?role=ORGANIZER')}
+                            className="btn-primary mt-4"
+                        >
+                            Join as Organizer
+                        </button>
                     </div>
                     <div className="hidden lg:block">
                         <div className="bg-gradient-to-tr from-primary-500/20 to-primary-500/5 aspect-square rounded-full flex items-center justify-center">

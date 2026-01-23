@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, Briefcase, ArrowRight } from 'lucide-react';
 import api from '../../utils/api';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [role, setRole] = useState('CLIENT');
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const roleParam = params.get('role');
+        if (roleParam === 'ORGANIZER' || roleParam === 'CLIENT') {
+            setRole(roleParam);
+        }
+    }, [location]);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
