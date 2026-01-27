@@ -1,8 +1,19 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, ArrowRight } from 'lucide-react';
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const [search, setSearch] = useState('');
+    const [city, setCity] = useState('');
+
+    const handleSearch = () => {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (city) params.append('city', city);
+        navigate(`/events?${params.toString()}`);
+    };
+
     return (
         <div className="space-y-20 pb-20">
             {/* Hero Section */}
@@ -19,14 +30,26 @@ const LandingPage = () => {
                     <div className="flex flex-col md:flex-row gap-4 p-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
                         <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-white rounded-xl text-slate-800">
                             <Search className="text-slate-400 w-5 h-5" />
-                            <input type="text" placeholder="Search events..." className="bg-transparent outline-none w-full" />
+                            <input
+                                type="text"
+                                placeholder="Search events..."
+                                className="bg-transparent outline-none w-full"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
                         </div>
                         <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-white rounded-xl text-slate-800">
                             <MapPin className="text-slate-400 w-5 h-5" />
-                            <input type="text" placeholder="Select city..." className="bg-transparent outline-none w-full" />
+                            <input
+                                type="text"
+                                placeholder="Select city..."
+                                className="bg-transparent outline-none w-full"
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                            />
                         </div>
                         <button
-                            onClick={() => navigate('/events')}
+                            onClick={handleSearch}
                             className="bg-primary-500 hover:bg-primary-400 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
                         >
                             Explore Now
@@ -51,7 +74,7 @@ const LandingPage = () => {
                     {['Wedding', 'Corporate', 'Music', 'Birthday', 'Workshop'].map((cat) => (
                         <div
                             key={cat}
-                            onClick={() => navigate('/events')}
+                            onClick={() => navigate(`/events?category=${cat}`)}
                             className="group relative h-40 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary-500 hover:shadow-xl transition-all cursor-pointer"
                         >
                             <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-all">

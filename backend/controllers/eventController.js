@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 const createEvent = async (req, res) => {
-    const { title, description, location, city, start_date, end_date, max_capacity, category_id, banner_url, packages } = req.body;
+    const { title, description, location, city, start_date, end_date, max_capacity, category_id, category_name, banner_url, packages } = req.body;
     const organizer_id = req.user.id;
 
     try {
@@ -11,9 +11,22 @@ const createEvent = async (req, res) => {
             return res.status(403).json({ message: 'Organizer is not verified. Please contact admin.' });
         }
 
+        let finalCategoryId = category_id;
+
+        // If category_name is provided, lookup or create
+        if (category_name) {
+            const catResult = await db.query('SELECT id FROM categories WHERE name ILIKE $1', [category_name]);
+            if (catResult.rows.length > 0) {
+                finalCategoryId = catResult.rows[0].id;
+            } else {
+                const newCat = await db.query('INSERT INTO categories (name) VALUES ($1) RETURNING id', [category_name]);
+                finalCategoryId = newCat.rows[0].id;
+            }
+        }
+
         const newEvent = await db.query(
             'INSERT INTO events (organizer_id, category_id, title, description, location, city, start_date, end_date, max_capacity) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-            [organizer_id, category_id, title, description, location, city, start_date, end_date, max_capacity]
+            [organizer_id, finalCategoryId, title, description, location, city, start_date, end_date, max_capacity]
         );
 
         const eventId = newEvent.rows[0].id;
@@ -93,4 +106,36 @@ const approveEvent = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getEvents, getEventById, approveEvent };
+const deleteEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await db.query('SELECT organizer_id FROM events WHERE id = $1', [id]);
+
+        if (event.rows.length === 0) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        // Authorization: Admin can delete any, Organizer can only delete their own
+        if (req.user.role !== 'ADMIN' && event.rows[0].organizer_id !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to delete this event' });
+        }
+
+        await db.query('DELETE FROM events WHERE id = $1', [id]);
+        res.json({ message: 'Event deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getCategories = async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM categories ORDER BY name ASC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories };

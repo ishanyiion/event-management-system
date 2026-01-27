@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Plus, Trash, ArrowRight, Info } from 'lucide-react';
+import { Calendar, MapPin, Plus, Trash, ArrowRight, Info, Search } from 'lucide-react';
 import api from '../../utils/api';
 
 const CreateEvent = () => {
@@ -13,13 +13,26 @@ const CreateEvent = () => {
         start_date: '',
         end_date: '',
         max_capacity: 100,
-        category_id: 1,
+        category_name: '',
     });
+    const [categories, setCategories] = useState([]);
     const [packages, setPackages] = useState([
         { name: 'Basic', price: 1000, features: 'Basic entry, No snacks' }
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchCats = async () => {
+            try {
+                const res = await api.get('/events/categories');
+                setCategories(res.data);
+            } catch (err) {
+                console.error('Failed to fetch categories');
+            }
+        };
+        fetchCats();
+    }, []);
 
     const handleAddPackage = () => {
         setPackages([...packages, { name: '', price: 0, features: '' }]);
@@ -73,17 +86,23 @@ const CreateEvent = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700">Category</label>
-                                <select
-                                    className="input"
-                                    value={formData.category_id}
-                                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                                >
-                                    <option value="1">Wedding</option>
-                                    <option value="2">Corporate</option>
-                                    <option value="3">Music</option>
-                                    <option value="4">Birthday</option>
-                                    <option value="5">Workshop</option>
-                                </select>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        list="category-suggestions"
+                                        className="input pl-10"
+                                        placeholder="Pick or type..."
+                                        value={formData.category_name}
+                                        onChange={(e) => setFormData({ ...formData, category_name: e.target.value })}
+                                        required
+                                    />
+                                    <datalist id="category-suggestions">
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.name} />
+                                        ))}
+                                    </datalist>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700">Capacity</label>

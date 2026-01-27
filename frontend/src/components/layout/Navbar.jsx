@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Calendar, User, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -19,10 +19,28 @@ const Navbar = () => {
                     <span>EventHub</span>
                 </Link>
 
-                <div className="hidden md:flex items-center gap-8 text-slate-600 font-medium">
-                    <Link to="/" className="hover:text-primary-600 transition-colors">Home</Link>
-                    <Link to="/events" className="hover:text-primary-600 transition-colors">Events</Link>
-                    {user && <Link to="/dashboard" className="hover:text-primary-600 transition-colors">Dashboard</Link>}
+                <div className="hidden md:flex items-center gap-4">
+                    <NavLink
+                        to="/"
+                        end
+                        className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                    >
+                        Home
+                    </NavLink>
+                    <NavLink
+                        to="/events"
+                        className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                    >
+                        Events
+                    </NavLink>
+                    {user && (
+                        <NavLink
+                            to="/dashboard"
+                            className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                        >
+                            Dashboard
+                        </NavLink>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">

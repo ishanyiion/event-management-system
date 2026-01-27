@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Users, Calendar, Banknote, ShieldCheck, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [stats, setStats] = useState(null);
     const [items, setItems] = useState([]);
@@ -90,15 +91,77 @@ const Dashboard = () => {
                                     <div className="flex items-center gap-4">
                                         <StatusBadge status={item.status || item.booking_status} />
                                         {user.role === 'ADMIN' && (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await api.put(`/events/approve/${item.id}`);
+                                                            setItems(items.filter(i => i.id !== item.id));
+                                                        } catch (err) {
+                                                            alert(err.response?.data?.message || 'Failed to approve event');
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-all border border-green-100"
+                                                >
+                                                    Add
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Are you sure you want to remove this event?')) {
+                                                            try {
+                                                                await api.delete(`/events/${item.id}`);
+                                                                setItems(items.filter(i => i.id !== item.id));
+                                                            } catch (err) {
+                                                                alert(err.response?.data?.message || 'Failed to remove event');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-100"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        )}
+                                        {user.role === 'CLIENT' && (item.status === 'PENDING' || item.booking_status === 'PENDING') && (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => navigate(`/booking/confirm/${item.id}`)}
+                                                    className="px-4 py-2 text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-all border border-green-100"
+                                                >
+                                                    Pay Now
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Are you sure you want to cancel this booking?')) {
+                                                            try {
+                                                                await api.delete(`/bookings/${item.id}`);
+                                                                setItems(items.filter(i => i.id !== item.id));
+                                                            } catch (err) {
+                                                                alert(err.response?.data?.message || 'Failed to cancel booking');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-100"
+                                                >
+                                                    Cancel Booking
+                                                </button>
+                                            </div>
+                                        )}
+                                        {user.role === 'ORGANIZER' && (
                                             <button
                                                 onClick={async () => {
-                                                    await api.put(`/events/approve/${item.id}`);
-                                                    setItems(items.filter(i => i.id !== item.id));
+                                                    if (window.confirm('Are you sure you want to remove this event? This action cannot be undone.')) {
+                                                        try {
+                                                            await api.delete(`/events/${item.id}`);
+                                                            setItems(items.filter(i => i.id !== item.id));
+                                                        } catch (err) {
+                                                            alert(err.response?.data?.message || 'Failed to remove event');
+                                                        }
+                                                    }
                                                 }}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                title="Approve"
+                                                className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-100"
                                             >
-                                                <CheckCircle className="w-6 h-6" />
+                                                Remove Event
                                             </button>
                                         )}
                                     </div>
