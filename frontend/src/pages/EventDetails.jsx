@@ -10,8 +10,7 @@ const EventDetails = () => {
     const navigate = useNavigate();
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedPkg, setSelectedPkg] = useState(null);
-    const [qty, setQty] = useState(1);
+    const [selectedItems, setSelectedItems] = useState({}); // { pkgId: qty }
     const [bookingLoading, setBookingLoading] = useState(false);
 
     useEffect(() => {
@@ -19,7 +18,6 @@ const EventDetails = () => {
             try {
                 const res = await api.get(`/events/${id}`);
                 setEvent(res.data);
-                if (res.data.packages.length > 0) setSelectedPkg(res.data.packages[0]);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -33,12 +31,17 @@ const EventDetails = () => {
         if (!user) return navigate('/login');
         if (user.role !== 'CLIENT') return alert('Only clients can book events.');
 
+        const items = Object.entries(selectedItems)
+            .filter(([_, qty]) => qty > 0)
+            .map(([pkgId, qty]) => ({ package_id: parseInt(pkgId), qty }));
+
+        if (items.length === 0) return alert('Please select at least one ticket.');
+
         setBookingLoading(true);
         try {
             const res = await api.post('/bookings', {
                 event_id: event.id,
-                package_id: selectedPkg.id,
-                qty
+                items
             });
             navigate(`/booking/confirm/${res.data.id}`);
         } catch (err) {
@@ -46,6 +49,19 @@ const EventDetails = () => {
         } finally {
             setBookingLoading(false);
         }
+    };
+
+    const updateQty = (pkgId, delta) => {
+        const current = selectedItems[pkgId] || 0;
+        const next = Math.max(0, current + delta);
+        setSelectedItems({ ...selectedItems, [pkgId]: next });
+    };
+
+    const calculateTotal = () => {
+        return event.packages.reduce((sum, pkg) => {
+            const qty = selectedItems[pkg.id] || 0;
+            return sum + (pkg.price * qty);
+        }, 0);
     };
 
     if (loading) return <div className="h-96 flex items-center justify-center">Loading...</div>;
@@ -74,7 +90,7 @@ const EventDetails = () => {
                         <div className="flex flex-wrap gap-6 text-slate-500 font-medium">
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-primary-500" />
-                                <span>{new Date(event.start_date).toLocaleDateString()}</span>
+                                <span>{new Date(event.start_date).toLocaleDateString('en-GB')} to {new Date(event.end_date).toLocaleDateString('en-GB')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <MapPin className="w-5 h-5 text-primary-500" />
@@ -99,35 +115,49 @@ const EventDetails = () => {
                         <h3 className="text-2xl font-bold text-slate-900">Select Package</h3>
 
                         <div className="space-y-4">
-                            {event.packages.map((pkg) => (
-                                <div
-                                    key={pkg.id}
-                                    onClick={() => setSelectedPkg(pkg)}
-                                    className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedPkg?.id === pkg.id ? 'border-primary-500 bg-white shadow-lg' : 'border-slate-100 bg-white/50 hover:border-slate-200'}`}
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-sm font-bold uppercase tracking-wider ${selectedPkg?.id === pkg.id ? 'text-primary-600' : 'text-slate-400'}`}>
-                                            {pkg.package_name}
-                                        </span>
-                                        <span className="text-xl font-extrabold text-slate-900">₹{pkg.price}</span>
+                            {event.packages.map((pkg) => {
+                                const qty = selectedItems[pkg.id] || 0;
+                                return (
+                                    <div
+                                        key={pkg.id}
+                                        className={`p-5 rounded-2xl border-2 transition-all ${qty > 0 ? 'border-primary-500 bg-white shadow-lg' : 'border-slate-100 bg-white/50 hover:border-slate-200'}`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className={`text-sm font-bold uppercase tracking-wider ${qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
+                                                {pkg.package_name}
+                                            </span>
+                                            <span className="text-xl font-extrabold text-slate-900">₹{pkg.price}</span>
+                                        </div>
+                                        <p className="text-slate-500 text-sm mb-4">{pkg.features}</p>
+
+                                        <div className="flex items-center justify-end">
+                                            <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-1">
+                                                <button
+                                                    onClick={() => updateQty(pkg.id, -1)}
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className={`font-bold w-4 text-center ${qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
+                                                    {qty}
+                                                </span>
+                                                <button
+                                                    onClick={() => updateQty(pkg.id, 1)}
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-slate-500 text-sm">{pkg.features}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <div className="space-y-4 pt-6 border-t border-slate-200">
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-slate-600">Quantity</span>
-                                <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-xl p-1">
-                                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500">-</button>
-                                    <span className="font-bold text-slate-900 w-4 text-center">{qty}</span>
-                                    <button onClick={() => setQty(qty + 1)} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500">+</button>
-                                </div>
-                            </div>
                             <div className="flex items-center justify-between text-lg">
                                 <span className="font-bold text-slate-900">Total</span>
-                                <span className="font-extrabold text-primary-600 text-2xl">₹{(selectedPkg?.price || 0) * qty}</span>
+                                <span className="font-extrabold text-primary-600 text-2xl">₹{calculateTotal()}</span>
                             </div>
                         </div>
 

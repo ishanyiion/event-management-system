@@ -8,6 +8,7 @@ const EventGrid = () => {
     const { user } = useAuth();
     const [searchParams] = useSearchParams();
     const [events, setEvents] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         city: searchParams.get('city') || '',
@@ -37,6 +38,18 @@ const EventGrid = () => {
         fetchEvents();
     }, [filters]);
 
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/events/categories');
+                setCategories(res.data);
+            } catch (err) {
+                console.error('Failed to fetch categories', err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
     return (
         <div className="space-y-8">
             {/* Filters Hub */}
@@ -63,18 +76,20 @@ const EventGrid = () => {
                 </div>
                 <div className="relative">
                     <Tag className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <select
-                        className="input pl-9 py-2 text-sm appearance-none bg-white"
+                    <input
+                        type="text"
+                        list="category-options"
+                        placeholder="Search category..."
+                        className="input pl-9 py-2 text-sm"
                         value={filters.category}
                         onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                    >
+                    />
+                    <datalist id="category-options">
                         <option value="">All Categories</option>
-                        <option value="Wedding">Wedding</option>
-                        <option value="Corporate">Corporate</option>
-                        <option value="Music">Music</option>
-                        <option value="Birthday">Birthday</option>
-                        <option value="Workshop">Workshop</option>
-                    </select>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.name} />
+                        ))}
+                    </datalist>
                 </div>
                 <div className="flex items-center justify-end px-2">
                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{events.length} Events Found</span>
@@ -123,7 +138,9 @@ const EventGrid = () => {
                                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                                         <div className="text-slate-500 flex items-center gap-2">
                                             <Calendar className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{new Date(event.start_date).toLocaleDateString()}</span>
+                                            <span className="text-sm font-medium">
+                                                {new Date(event.start_date).toLocaleDateString('en-GB')} - {new Date(event.end_date).toLocaleDateString('en-GB')}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1 text-primary-600 font-bold">
                                             View Details <ArrowRight className="w-4 h-4" />

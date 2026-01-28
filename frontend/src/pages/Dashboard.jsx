@@ -82,8 +82,8 @@ const Dashboard = () => {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-slate-900">{item.title || item.event_title}</h4>
-                                            <p className="text-sm text-slate-500">
-                                                {user.role === 'CLIENT' ? `Package: ${item.package_name}` : `Location: ${item.city}`}
+                                            <p className="text-sm text-slate-500 line-clamp-1">
+                                                {user.role === 'CLIENT' ? `Packages: ${item.package_summary || 'N/A'}` : `Location: ${item.city}`}
                                             </p>
                                         </div>
                                     </div>

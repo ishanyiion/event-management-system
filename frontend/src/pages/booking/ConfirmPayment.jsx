@@ -70,19 +70,36 @@ const ConfirmPayment = () => {
             <div className="grid md:grid-cols-2 gap-8 items-start">
                 {/* QR Code Section */}
                 <div className="card p-8 space-y-6 flex flex-col items-center justify-center bg-white shadow-xl rounded-3xl border border-slate-100 sticky top-8">
-                    <div className="w-56 h-56 bg-slate-900 rounded-3xl p-4 flex items-center justify-center shadow-2xl transition-transform hover:scale-105 duration-300">
-                        <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center border-4 border-slate-900 overflow-hidden">
-                            <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=demo@upi&pn=EventHub&am=${booking?.total_amount}`}
-                                alt="QR"
-                                className="w-full h-full p-2"
-                            />
+                    {booking && (
+                        <div className="w-full space-y-6 flex flex-col items-center">
+                            <div className="w-56 h-56 bg-slate-900 rounded-3xl p-4 flex items-center justify-center shadow-2xl transition-transform hover:scale-105 duration-300">
+                                <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center border-4 border-slate-900 overflow-hidden">
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                                            `upi://pay?pa=demo@upi&pn=EventHub&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`
+                                        )}`}
+                                        alt="UPI QR Code"
+                                        className="w-full h-full p-2"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Mobile Deep Link Button */}
+                            <a
+                                href={`upi://pay?pa=demo@upi&pn=EventHub&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`}
+                                className="w-full flex md:hidden items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                            >
+                                <Smartphone className="w-5 h-5 text-primary-400" />
+                                Pay via Any UPI App
+                            </a>
+
+                            <div className="text-center space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Payee: EventHub</p>
+                                <p className="text-2xl font-black text-primary-600 tracking-tighter">₹{booking.total_amount}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="text-center space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">UPI ID: demo@upi</p>
-                        <p className="text-2xl font-black text-primary-600 tracking-tighter">₹{booking?.total_amount}</p>
-                    </div>
+                    )}
+
                     <div className="w-full pt-4 border-t border-slate-100 text-center">
                         <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
                             <ShieldCheck className="w-3.5 h-3.5 text-green-500" /> Secure Encryption Active
@@ -132,9 +149,24 @@ const ConfirmPayment = () => {
                             />
                         </div>
 
+                        {/* Package Breakdown */}
+                        {booking?.items && booking.items.length > 0 && (
+                            <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">Items Breakdown</label>
+                                <div className="space-y-2">
+                                    {booking.items.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-sm">
+                                            <span className="text-slate-600 font-medium">{item.package_name} <span className="text-slate-400">x{item.qty}</span></span>
+                                            <span className="text-slate-900 font-bold">₹{item.price_at_time * item.qty}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Event Price - Read Only highlight */}
                         <div className="space-y-1.5 p-4 bg-primary-50/50 rounded-2xl border border-primary-100">
-                            <label className="text-[10px] font-black text-primary-500 uppercase flex items-center gap-2"><Banknote className="w-3.5 h-3.5" /> Payable Amount</label>
+                            <label className="text-[10px] font-black text-primary-500 uppercase flex items-center gap-2"><Banknote className="w-3.5 h-3.5" /> Total Payable Amount</label>
                             <p className="text-2xl font-black text-primary-700 leading-none mt-1">₹{booking?.total_amount}</p>
                         </div>
 
