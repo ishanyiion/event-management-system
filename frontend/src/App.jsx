@@ -8,6 +8,7 @@ import EventDetails from './pages/EventDetails';
 import CreateEvent from './pages/event/CreateEvent';
 import EventGrid from './components/events/EventGrid';
 import ConfirmPayment from './pages/booking/ConfirmPayment';
+import BookingView from './pages/booking/BookingView';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
               <Route path="/event/:id" element={<EventDetails />} />
               <Route path="/event/create" element={<CreateEvent />} />
               <Route path="/booking/confirm/:bookingId" element={<ConfirmPayment />} />
+              <Route path="/booking/view/:id" element={<BookingView />} />
             </Routes>
           </main>
         </div>

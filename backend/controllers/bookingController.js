@@ -2,7 +2,7 @@ const db = require('../config/db');
 const { sendReceipt } = require('../utils/emailService');
 
 const createBooking = async (req, res) => {
-    const { event_id, items } = req.body; // items = [{ package_id, qty }]
+    const { event_id, items, booked_date } = req.body; // items = [{ package_id, qty }]
     const client_id = req.user.id;
 
     if (!items || items.length === 0) {
@@ -50,8 +50,8 @@ const createBooking = async (req, res) => {
 
         // 4. Create Booking
         const newBooking = await db.query(
-            'INSERT INTO bookings (event_id, client_id, total_amount, qty) VALUES ($1, $2, $3, $4) RETURNING *',
-            [event_id, client_id, total_amount, totalRequestedQty]
+            'INSERT INTO bookings (event_id, client_id, total_amount, qty, booked_date) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [event_id, client_id, total_amount, totalRequestedQty, booked_date]
         );
         const bookingId = newBooking.rows[0].id;
 
@@ -102,6 +102,17 @@ const confirmPayment = async (req, res) => {
             'UPDATE bookings SET booking_status = \'CONFIRMED\', payment_status = \'PAID\' WHERE id = $1 RETURNING *',
             [booking_id]
         );
+
+        // Generate Unique Tickets
+        for (const item of itemsRes.rows) {
+            for (let i = 0; i < item.qty; i++) {
+                const ticketNumber = `EH-${bookingRes.rows[0].event_id}-${booking_id}-${Math.floor(1000 + Math.random() * 9000)}-${i + 1}`;
+                await db.query(
+                    'INSERT INTO tickets (booking_id, package_id, ticket_number) VALUES ($1, $2, $3)',
+                    [booking_id, item.package_id, ticketNumber]
+                );
+            }
+        }
 
         await db.query('COMMIT');
 
@@ -199,6 +210,12 @@ const getBookingById = async (req, res) => {
             [id]
         );
         booking.items = itemsRes.rows;
+
+        const ticketsRes = await db.query(
+            'SELECT t.*, p.package_name FROM tickets t JOIN event_packages p ON t.package_id = p.id WHERE t.booking_id = $1',
+            [id]
+        );
+        booking.tickets = ticketsRes.rows;
 
         res.json(booking);
     } catch (err) {

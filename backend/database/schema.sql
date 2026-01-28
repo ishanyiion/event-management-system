@@ -33,10 +33,20 @@ CREATE TABLE events (
     city VARCHAR(255),
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
     max_capacity INTEGER DEFAULT 0,
     status event_status DEFAULT 'PENDING',
     banner_url VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE event_schedules (
+    id SERIAL PRIMARY KEY,
+    event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+    event_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL
 );
 
 -- Event Packages Table

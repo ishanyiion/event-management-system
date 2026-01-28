@@ -1,17 +1,45 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Calendar, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Search, MapPin, Calendar, ArrowRight, Clock } from 'lucide-react';
+import { getEventImage, formatEventImage } from '../utils/eventImages';
+import api from '../utils/api';
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [city, setCity] = useState('');
+    const [events, setEvents] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch events
+                const eventsRes = await api.get('/events');
+                setEvents(eventsRes.data.slice(0, 3)); // Show top 3
+
+                // Fetch real categories
+                const catRes = await api.get('/events/categories');
+                setCategories(catRes.data.slice(0, 5));
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (city) params.append('city', city);
         navigate(`/events?${params.toString()}`);
+    };
+
+    const handleImageError = (e, category, title) => {
+        e.target.src = getEventImage(category, title);
     };
 
     return (
@@ -58,6 +86,52 @@ const LandingPage = () => {
                 </div>
             </section>
 
+            {/* Featured Events Section */}
+            {!loading && events.length > 0 && (
+                <section className="space-y-8">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-3xl font-bold text-slate-900 border-l-4 border-primary-500 pl-4">Featured Events</h2>
+                        <Link to="/events" className="text-primary-600 font-bold flex items-center gap-1 hover:gap-2 transition-all">
+                            View All Events <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {events.map((event) => (
+                            <Link key={event.id} to={`/event/${event.id}`} className="group card hover:shadow-2xl transition-all duration-300">
+                                <div className="h-48 overflow-hidden relative">
+                                    <img
+                                        src={formatEventImage(event.banner_url) || getEventImage(event.category_name, event.title)}
+                                        alt={event.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        onError={(e) => handleImageError(e, event.category_name, event.title)}
+                                    />
+                                    <div className="absolute top-4 left-4">
+                                        <span className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-primary-600 shadow-sm uppercase">
+                                            {event.category_name}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-6 space-y-3">
+                                    <h3 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-1">{event.title}</h3>
+                                    <div className="flex items-center gap-2 text-slate-500 text-xs">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        <span>{event.city}</span>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            <span className="text-[10px] font-bold">{new Date(event.start_date).toLocaleDateString('en-GB')}</span>
+                                        </div>
+                                        <span className="text-xs font-black text-primary-500">Explore Details</span>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* Featured Categories */}
             <section className="space-y-8">
                 <div className="flex items-center justify-between">
@@ -71,16 +145,22 @@ const LandingPage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-                    {['Wedding', 'Corporate', 'Music', 'Birthday', 'Workshop'].map((cat) => (
+                    {(categories.length > 0 ? categories.map(c => c.name) : ['Corporate', 'Music', 'Workshop', 'Tech Conference', 'Art Exhibition']).map((cat) => (
                         <div
                             key={cat}
                             onClick={() => navigate(`/events?category=${cat}`)}
-                            className="group relative h-40 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary-500 hover:shadow-xl transition-all cursor-pointer"
+                            className="group relative h-48 bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-primary-500 hover:shadow-xl transition-all cursor-pointer"
                         >
-                            <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center group-hover:bg-primary-600 group-hover:text-white transition-all">
-                                <Calendar className="w-6 h-6" />
+                            <img
+                                src={getEventImage(cat)}
+                                alt={cat}
+                                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-110 transition-all duration-500"
+                                onError={(e) => { e.target.src = getEventImage('default'); }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+                            <div className="relative h-full p-6 flex flex-col justify-end items-center gap-2">
+                                <span className="font-bold text-white text-lg drop-shadow-md">{cat}</span>
                             </div>
-                            <span className="font-bold text-slate-700">{cat}</span>
                         </div>
                     ))}
                 </div>

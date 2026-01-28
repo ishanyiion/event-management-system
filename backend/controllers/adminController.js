@@ -46,7 +46,7 @@ const verifyOrganizer = async (req, res) => {
 
 const getPendingEvents = async (req, res) => {
     try {
-        const events = await db.query('SELECT e.*, u.name as organizer_name FROM events e JOIN users u ON e.organizer_id = u.id WHERE e.status = \'PENDING\'');
+        const events = await db.query('SELECT e.*, u.name as organizer_name, c.name as category_name FROM events e JOIN users u ON e.organizer_id = u.id LEFT JOIN categories c ON e.category_id = c.id WHERE e.status = \'PENDING\'');
         res.json(events.rows);
     } catch (err) {
         console.error(err);

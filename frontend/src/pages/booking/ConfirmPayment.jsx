@@ -47,7 +47,7 @@ const ConfirmPayment = () => {
                 user_email: userEmail
             });
             alert('Payment confirmed successfully! A receipt has been sent to your email.');
-            navigate('/dashboard');
+            navigate(`/booking/view/${bookingId}`);
         } catch (err) {
             setError(err.response?.data?.message || 'Verification failed. Try again.');
         } finally {
@@ -115,12 +115,14 @@ const ConfirmPayment = () => {
                         {/* Event Name - Read Only */}
                         <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-100 transition-colors focus-within:bg-white focus-within:border-primary-200">
                             <label className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Event for Payment</label>
-                            <input
-                                type="text"
-                                className="w-full bg-transparent font-bold text-slate-700 outline-none text-sm pointer-events-none"
-                                value={booking?.event_title || ''}
-                                readOnly
-                            />
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-slate-700 text-sm">{booking?.event_title || 'Loading...'}</span>
+                                {booking?.booked_date && (
+                                    <span className="text-xs font-black text-primary-600 bg-primary-50 px-2 py-1 rounded-lg">
+                                        {new Date(booking.booked_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* User Name - Editable */}

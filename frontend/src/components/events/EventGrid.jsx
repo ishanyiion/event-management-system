@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Calendar, Tag, ArrowRight, Trash2 } from 'lucide-react';
+import { Search, MapPin, Calendar, Tag, ArrowRight, Trash2, Clock, CheckCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
+import { getEventImage, formatEventImage } from '../../utils/eventImages';
+import { formatTimeAMPM } from '../../utils/formatTime';
 
 const EventGrid = () => {
     const { user } = useAuth();
@@ -49,6 +51,10 @@ const EventGrid = () => {
         };
         fetchCategories();
     }, []);
+
+    const handleImageError = (e, category, title) => {
+        e.target.src = getEventImage(category, title);
+    };
 
     return (
         <div className="space-y-8">
@@ -116,15 +122,21 @@ const EventGrid = () => {
                         <div key={event.id} className="group card hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 relative">
                             <Link to={`/event/${event.id}`}>
                                 <div className="relative h-48 bg-slate-200 overflow-hidden">
-                                    {event.banner_url ? (
-                                        <img src={event.banner_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                                            <Calendar className="w-12 h-12 text-slate-300" />
+                                    <img
+                                        src={formatEventImage(event.banner_url) || getEventImage(event.category_name, event.title)}
+                                        alt={event.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        onError={(e) => handleImageError(e, event.category_name, event.title)}
+                                    />
+                                    <div className="absolute top-4 left-4 flex gap-2">
+                                        <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary-600 shadow-sm">
+                                            {event.category_name}
                                         </div>
-                                    )}
-                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary-600 shadow-sm">
-                                        {event.category_name}
+                                        {new Date(event.end_date) < new Date() && (
+                                            <div className="bg-amber-500/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" /> Completed
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6 space-y-4">
@@ -136,11 +148,19 @@ const EventGrid = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                                        <div className="text-slate-500 flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" />
-                                            <span className="text-sm font-medium">
-                                                {new Date(event.start_date).toLocaleDateString('en-GB')} - {new Date(event.end_date).toLocaleDateString('en-GB')}
-                                            </span>
+                                        <div className="text-slate-500 space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4" />
+                                                <span className="text-sm font-medium">
+                                                    {new Date(event.start_date).toLocaleDateString('en-GB')} - {new Date(event.end_date).toLocaleDateString('en-GB')}
+                                                </span>
+                                            </div>
+                                            {event.start_time && (
+                                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                                    <Clock className="w-3 h-3" />
+                                                    <span>{formatTimeAMPM(event.start_time)} - {formatTimeAMPM(event.end_time)}</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1 text-primary-600 font-bold">
                                             View Details <ArrowRight className="w-4 h-4" />
@@ -149,27 +169,6 @@ const EventGrid = () => {
                                 </div>
                             </Link>
 
-                            {/* Admin Delete Action */}
-                            {user && user.role === 'ADMIN' && (
-                                <button
-                                    onClick={async (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-                                            try {
-                                                await api.delete(`/events/${event.id}`);
-                                                setEvents(events.filter(ev => ev.id !== event.id));
-                                            } catch (err) {
-                                                alert(err.response?.data?.message || 'Failed to delete event');
-                                            }
-                                        }
-                                    }}
-                                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur text-red-500 hover:bg-red-500 hover:text-white rounded-full shadow-lg transition-all z-10"
-                                    title="Delete Event"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            )}
                         </div>
                     ))}
                 </div>

@@ -3,10 +3,12 @@ const { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCate
 const { auth, authorize } = require('../middleware/auth');
 const router = express.Router();
 
+const upload = require('../middleware/upload');
+
 router.get('/', getEvents);
 router.get('/categories', getCategories);
 router.get('/:id', getEventById);
-router.post('/create', auth, authorize('ORGANIZER'), createEvent);
+router.post('/create', auth, authorize('ORGANIZER'), upload.array('images', 5), createEvent);
 router.put('/approve/:id', auth, authorize(['ADMIN']), approveEvent);
 router.delete('/:id', auth, authorize(['ADMIN', 'ORGANIZER']), deleteEvent);
 
