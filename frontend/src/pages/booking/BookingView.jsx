@@ -95,7 +95,7 @@ const BookingView = () => {
                                 <p className="text-xs font-bold text-slate-400 uppercase">Valid On</p>
                                 <p className="font-bold">
                                     {booking.booked_date ?
-                                        booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })).join(', ')
+                                        booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB')).join(', ')
                                         : 'N/A'}
                                 </p>
                             </div>

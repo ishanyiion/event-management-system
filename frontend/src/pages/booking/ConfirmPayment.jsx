@@ -119,7 +119,7 @@ const ConfirmPayment = () => {
                                 <span className="font-bold text-slate-700 text-sm">{booking?.event_title || 'Loading...'}</span>
                                 {booking?.booked_date && (
                                     <span className="text-xs font-black text-primary-600 bg-primary-50 px-2 py-1 rounded-lg">
-                                        {booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })).join(', ')}
+                                        {booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB')).join(', ')}
                                     </span>
                                 )}
                             </div>

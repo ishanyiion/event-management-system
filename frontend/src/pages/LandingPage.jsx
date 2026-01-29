@@ -11,13 +11,15 @@ const LandingPage = () => {
     const [events, setEvents] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Fetch events
                 const eventsRes = await api.get('/events');
-                setEvents(eventsRes.data.slice(0, 3)); // Show top 3
+                setEvents(eventsRes.data.slice(0, 6)); // Show top 6 for carousel
 
                 // Fetch real categories
                 const catRes = await api.get('/events/categories');
@@ -30,6 +32,15 @@ const LandingPage = () => {
         };
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (!loading && events.length > 0 && !isPaused) {
+            const timer = setInterval(() => {
+                setCurrentIndex((prev) => (prev + 1) % events.length);
+            }, 5000); // Slide every 5 seconds
+            return () => clearInterval(timer);
+        }
+    }, [loading, events.length, isPaused]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
@@ -51,9 +62,6 @@ const LandingPage = () => {
                     <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
                         Discover Your Next <span className="text-primary-300">Unforgettable</span> Event
                     </h1>
-                    <p className="text-xl text-primary-100 font-light">
-                        Book the best weddings, corporate events, and music festivals with ease.
-                    </p>
 
                     <div className="flex flex-col md:flex-row gap-4 p-2 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
                         <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-white rounded-xl text-slate-800">
@@ -88,7 +96,7 @@ const LandingPage = () => {
 
             {/* Featured Events Section */}
             {!loading && events.length > 0 && (
-                <section className="space-y-8">
+                <section className="space-y-8 relative group/carousel">
                     <div className="flex items-center justify-between">
                         <h2 className="text-3xl font-bold text-slate-900 border-l-4 border-primary-500 pl-4">Featured Events</h2>
                         <Link to="/events" className="text-primary-600 font-bold flex items-center gap-1 hover:gap-2 transition-all">
@@ -96,37 +104,83 @@ const LandingPage = () => {
                         </Link>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {events.map((event) => (
-                            <Link key={event.id} to={`/event/${event.id}`} className="group card hover:shadow-2xl transition-all duration-300">
-                                <div className="h-48 overflow-hidden relative">
-                                    <img
-                                        src={formatEventImage(event.banner_url) || getEventImage(event.category_name, event.title)}
-                                        alt={event.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        onError={(e) => handleImageError(e, event.category_name, event.title)}
-                                    />
-                                    <div className="absolute top-4 left-4">
-                                        <span className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-primary-600 shadow-sm uppercase">
-                                            {event.category_name}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-6 space-y-3">
-                                    <h3 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-1">{event.title}</h3>
-                                    <div className="flex items-center gap-2 text-slate-500 text-xs">
-                                        <MapPin className="w-3.5 h-3.5" />
-                                        <span>{event.city}</span>
-                                    </div>
-                                    <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-slate-400">
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold">{new Date(event.start_date).toLocaleDateString('en-GB')}</span>
+                    <div
+                        className="relative overflow-hidden rounded-3xl"
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                    >
+                        {/* Carousel Track */}
+                        <div
+                            className="flex transition-transform duration-700 ease-in-out"
+                            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                        >
+                            {events.map((event) => (
+                                <div key={event.id} className="w-full flex-shrink-0 px-4">
+                                    <Link to={`/event/${event.id}`} className="group card flex flex-col md:flex-row overflow-hidden hover:shadow-2xl transition-all duration-500 border-none bg-white p-0 h-[400px] md:h-[300px]">
+                                        <div className="w-full md:w-1/2 h-48 md:h-full overflow-hidden relative">
+                                            <img
+                                                src={formatEventImage(event.banner_url) || getEventImage(event.category_name, event.title)}
+                                                alt={event.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                                onError={(e) => handleImageError(e, event.category_name, event.title)}
+                                            />
+                                            <div className="absolute top-4 left-4">
+                                                <span className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-primary-600 shadow-sm uppercase">
+                                                    {event.category_name}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span className="text-xs font-black text-primary-500">Explore Details</span>
-                                    </div>
+                                        <div className="p-8 md:w-1/2 flex flex-col justify-center space-y-4">
+                                            <h3 className="text-2xl md:text-3xl font-black text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-2 uppercase tracking-tight leading-tight">
+                                                {event.title}
+                                            </h3>
+                                            <div className="flex flex-wrap gap-4 text-slate-500 font-medium pt-2">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-4 h-4 text-primary-500" />
+                                                    <span>{event.city}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-4 h-4 text-primary-500" />
+                                                    <span>{new Date(event.start_date).toLocaleDateString('en-GB')}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-slate-400 line-clamp-2 text-sm leading-relaxed">
+                                                {event.description}
+                                            </p>
+                                            <div className="pt-4">
+                                                <span className="inline-flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-xl font-bold group-hover:bg-primary-500 transition-colors shadow-lg shadow-primary-500/20 uppercase text-xs tracking-widest">
+                                                    Book Tickets <ArrowRight className="w-4 h-4" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </Link>
                                 </div>
-                            </Link>
+                            ))}
+                        </div>
+
+                        {/* Navigation Arrows */}
+                        <button
+                            onClick={() => setCurrentIndex((prev) => (prev - 1 + events.length) % events.length)}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 shadow-xl opacity-0 group-hover/carousel:opacity-100 transition-all hover:bg-white z-10"
+                        >
+                            <ArrowRight className="w-6 h-6 rotate-180" />
+                        </button>
+                        <button
+                            onClick={() => setCurrentIndex((prev) => (prev + 1) % events.length)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 shadow-xl opacity-0 group-hover/carousel:opacity-100 transition-all hover:bg-white z-10"
+                        >
+                            <ArrowRight className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* Indicators */}
+                    <div className="flex justify-center gap-2">
+                        {events.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setCurrentIndex(idx)}
+                                className={`h-1.5 transition-all duration-300 rounded-full ${currentIndex === idx ? 'w-8 bg-primary-600' : 'w-2 bg-slate-200'}`}
+                            />
                         ))}
                     </div>
                 </section>

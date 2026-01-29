@@ -175,4 +175,89 @@ const getCategories = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories };
+const getEventAnalytics = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organizer_id = req.user.id;
+
+        // 1. Get Event Summary & Verify Organizer
+        const eventRes = await db.query(
+            `SELECT e.*, c.name as category_name 
+             FROM events e 
+             LEFT JOIN categories c ON e.category_id = c.id 
+             WHERE e.id = $1`, [id]
+        );
+
+        if (eventRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const event = eventRes.rows[0];
+
+        if (req.user.role !== 'ADMIN' && event.organizer_id !== organizer_id) {
+            return res.status(403).json({ message: 'Not authorized to view analytics for this event' });
+        }
+
+        // 2. Category-wise Breakdown
+        const packagesRes = await db.query(
+            `SELECT p.*, 
+             COALESCE((SELECT SUM(bi.qty) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as sold_qty,
+             COALESCE((SELECT SUM(bi.qty * bi.price_at_time) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as category_revenue
+             FROM event_packages p WHERE p.event_id = $1`,
+            [id]
+        );
+
+        // 3. Overall Stats
+        const stats = {
+            totalCapacity: packagesRes.rows.reduce((sum, p) => sum + parseInt(p.capacity || 0), 0) || event.max_capacity,
+            totalSold: packagesRes.rows.reduce((sum, p) => sum + parseInt(p.sold_qty || 0), 0),
+            totalRevenue: packagesRes.rows.reduce((sum, p) => sum + parseFloat(p.category_revenue || 0), 0)
+        };
+        stats.remaining = Math.max(0, stats.totalCapacity - stats.totalSold);
+
+        // 4. Bookings List
+        const bookingsRes = await db.query(
+            `SELECT b.id as booking_id, b.total_amount, b.booking_status, b.payment_status, b.created_at as booking_date, b.booked_date,
+             u.name as person_name, u.email,
+             (SELECT string_agg(p.package_name || ' (x' || bi.qty || ')', ', ') 
+              FROM booking_items bi 
+              JOIN event_packages p ON bi.package_id = p.id 
+              WHERE bi.booking_id = b.id) as package_summary
+             FROM bookings b
+             JOIN users u ON b.client_id = u.id
+             WHERE b.event_id = $1
+             ORDER BY b.created_at DESC`,
+            [id]
+        );
+
+        res.json({
+            event,
+            stats,
+            packages: packagesRes.rows,
+            bookings: bookingsRes.rows
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getOrganizerEvents = async (req, res) => {
+    try {
+        const organizer_id = req.user.id;
+        const events = await db.query(
+            `SELECT e.*, c.name as category_name 
+             FROM events e 
+             LEFT JOIN categories c ON e.category_id = c.id 
+             WHERE e.organizer_id = $1 
+             ORDER BY e.created_at DESC`,
+            [organizer_id]
+        );
+        res.json(events.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories, getEventAnalytics, getOrganizerEvents };
