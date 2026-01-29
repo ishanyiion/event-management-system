@@ -66,7 +66,7 @@ const CreateEvent = () => {
     const [schedule, setSchedule] = useState([]);
     const [categories, setCategories] = useState([]);
     const [packages, setPackages] = useState([
-        { name: 'Basic', price: 1000, features: 'Basic entry, No snacks' }
+        { name: 'Basic', price: 1000, features: 'Basic entry, No snacks', capacity: 50 }
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -107,7 +107,7 @@ const CreateEvent = () => {
     }, [formData.start_date, formData.end_date]);
 
     const handleAddPackage = () => {
-        setPackages([...packages, { name: '', price: 0, features: '' }]);
+        setPackages([...packages, { name: '', price: 0, features: '', capacity: 50 }]);
     };
 
     const handleFileChange = (e) => {
@@ -441,6 +441,21 @@ const CreateEvent = () => {
                                         onChange={(e) => {
                                             const newPkgs = [...packages];
                                             newPkgs[index].price = e.target.value;
+                                            setPackages(newPkgs);
+                                        }}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase">Capacity (Tickets)</label>
+                                    <input
+                                        type="number"
+                                        className="input py-1.5"
+                                        placeholder="e.g., 50"
+                                        value={pkg.capacity}
+                                        onChange={(e) => {
+                                            const newPkgs = [...packages];
+                                            newPkgs[index].capacity = e.target.value;
                                             setPackages(newPkgs);
                                         }}
                                         required

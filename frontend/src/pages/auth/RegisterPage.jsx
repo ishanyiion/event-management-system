@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Briefcase, ArrowRight } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Briefcase, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import api from '../../utils/api';
 
 const RegisterPage = () => {
@@ -22,6 +22,7 @@ const RegisterPage = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -105,13 +106,20 @@ const RegisterPage = () => {
                         <div className="relative">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
-                                className="input pl-10"
+                                className="input pl-10 pr-10"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 required
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
                     </div>
 

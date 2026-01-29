@@ -62,8 +62,8 @@ const createEvent = async (req, res) => {
         if (packages && packages.length > 0) {
             for (const pkg of packages) {
                 await db.query(
-                    'INSERT INTO event_packages (event_id, package_name, price, features) VALUES ($1, $2, $3, $4)',
-                    [eventId, pkg.name, pkg.price, pkg.features]
+                    'INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [eventId, pkg.name, pkg.price, pkg.features, pkg.capacity || 0]
                 );
             }
         }
@@ -111,7 +111,12 @@ const getEventById = async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        const packages = await db.query('SELECT * FROM event_packages WHERE event_id = $1', [req.params.id]);
+        const packages = await db.query(
+            `SELECT p.*, 
+             COALESCE((SELECT SUM(bi.qty) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as sold_qty
+             FROM event_packages p WHERE p.event_id = $1`,
+            [req.params.id]
+        );
         const schedule = await db.query('SELECT * FROM event_schedules WHERE event_id = $1 ORDER BY event_date ASC', [req.params.id]);
 
         res.json({

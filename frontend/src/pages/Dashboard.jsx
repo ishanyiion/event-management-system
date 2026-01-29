@@ -27,7 +27,11 @@ const Dashboard = () => {
                     setItems(res.data.filter(e => e.organizer_id === user.id));
                 } else {
                     const res = await api.get('/bookings/my');
-                    const sorted = res.data.sort((a, b) => new Date(b.booked_date) - new Date(a.booked_date));
+                    const sorted = res.data.sort((a, b) => {
+                        const dateA = a.booked_date ? new Date(a.booked_date.split(',')[0]) : new Date(0);
+                        const dateB = b.booked_date ? new Date(b.booked_date.split(',')[0]) : new Date(0);
+                        return dateB - dateA;
+                    });
                     setItems(sorted);
                 }
             } catch (err) {
@@ -45,7 +49,12 @@ const Dashboard = () => {
         e.target.src = getEventImage(category, title);
     };
 
-    const isExpired = (date) => new Date(date) < new Date().setHours(0, 0, 0, 0);
+    const isExpired = (dateStr) => {
+        if (!dateStr) return false;
+        const dates = dateStr.split(',');
+        const lastDate = new Date(dates[dates.length - 1]);
+        return lastDate < new Date().setHours(0, 0, 0, 0);
+    };
 
     const activeBookings = user.role === 'CLIENT' ? items.filter(i => !isExpired(i.booked_date)) : [];
     const expiredBookings = user.role === 'CLIENT' ? items.filter(i => isExpired(i.booked_date)).slice(0, 5) : [];
@@ -215,7 +224,9 @@ const BookingCard = ({ item, navigate, expired }) => {
                     <h4 className={`font-bold ${expired ? 'text-slate-500' : 'text-slate-900'}`}>{item.title || item.event_title}</h4>
                     <p className="text-sm text-slate-500 line-clamp-1">
                         <span className={`font-bold mr-2 ${expired ? 'text-slate-400' : 'text-primary-600'}`}>
-                            {item.booked_date ? new Date(item.booked_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}
+                            {item.booked_date ?
+                                item.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })).join(', ')
+                                : 'N/A'}
                         </span>
                         <span className={expired ? 'text-slate-400' : ''}>
                             Packages: {item.package_summary || 'N/A'}

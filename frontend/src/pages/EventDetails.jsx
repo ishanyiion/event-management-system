@@ -13,7 +13,7 @@ const EventDetails = () => {
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedItems, setSelectedItems] = useState({}); // { pkgId: qty }
-    const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedDates, setSelectedDates] = useState([]); // Array of strings
     const [bookingLoading, setBookingLoading] = useState(false);
     const [activeImage, setActiveImage] = useState(null);
 
@@ -27,7 +27,7 @@ const EventDetails = () => {
                 const res = await api.get(`/events/${id}`);
                 setEvent(res.data);
                 if (res.data.start_date) {
-                    setSelectedDate(res.data.start_date);
+                    setSelectedDates([res.data.start_date.split('T')[0]]);
                 }
                 // Set initial active image
                 const mainImg = formatEventImage(res.data.banner_url) || getEventImage(res.data.category_name, res.data.title);
@@ -50,19 +50,34 @@ const EventDetails = () => {
             .map(([pkgId, qty]) => ({ package_id: parseInt(pkgId), qty }));
 
         if (items.length === 0) return alert('Please select at least one ticket.');
+        if (selectedDates.length === 0) return alert('Please select at least one date.');
 
         setBookingLoading(true);
         try {
             const res = await api.post('/bookings', {
                 event_id: event.id,
                 items,
-                booked_date: selectedDate
+                booked_date: selectedDates // Send array of dates
             });
             navigate(`/booking/confirm/${res.data.id}`);
         } catch (err) {
             alert(err.response?.data?.message || 'Booking failed');
         } finally {
             setBookingLoading(false);
+        }
+    };
+
+    const toggleDateSelection = (dateStr) => {
+        const dateOnly = dateStr.split('T')[0];
+        if (selectedDates.includes(dateOnly)) {
+            // Only allow deselecting if there's more than one date
+            if (selectedDates.length > 1) {
+                setSelectedDates(selectedDates.filter(d => d !== dateOnly));
+            } else {
+                alert("Please select at least one date.");
+            }
+        } else {
+            setSelectedDates([...selectedDates, dateOnly]);
         }
     };
 
@@ -73,10 +88,11 @@ const EventDetails = () => {
     };
 
     const calculateTotal = () => {
-        return event.packages.reduce((sum, pkg) => {
+        const packageTotal = event.packages.reduce((sum, pkg) => {
             const qty = selectedItems[pkg.id] || 0;
             return sum + (pkg.price * qty);
         }, 0);
+        return packageTotal * selectedDates.length;
     };
 
     if (loading) return <div className="h-96 flex items-center justify-center">Loading...</div>;
@@ -99,7 +115,7 @@ const EventDetails = () => {
                                 <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-2xl text-sm font-bold text-primary-600 shadow-md">
                                     {event.category_name}
                                 </div>
-                                {new Date(event.end_date) < new Date() && (
+                                {new Date(event.end_date).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
                                     <div className="bg-amber-500/90 backdrop-blur px-4 py-2 rounded-2xl text-sm font-bold text-white shadow-md flex items-center gap-2">
                                         <Clock className="w-4 h-4" /> COMPLETED EVENT
                                     </div>
@@ -182,14 +198,17 @@ const EventDetails = () => {
                     <div className="card p-8 sticky top-24 space-y-8 border-slate-200 bg-slate-50/50">
                         {/* Date Selection */}
                         <div className="space-y-4">
-                            <h3 className="text-xl font-bold text-slate-900 border-l-4 border-primary-500 pl-3">Select Date</h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-slate-900 border-l-4 border-primary-500 pl-3">Select Date</h3>
+                                <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Multi-Select</span>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {event.schedule && event.schedule.length > 0 ? (
                                     event.schedule.map((day) => (
                                         <button
                                             key={day.event_date}
-                                            onClick={() => setSelectedDate(day.event_date)}
-                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${selectedDate?.split('T')[0] === day.event_date.split('T')[0]
+                                            onClick={() => toggleDateSelection(day.event_date)}
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${selectedDates.includes(day.event_date.split('T')[0])
                                                 ? 'border-primary-500 bg-primary-50 text-primary-700'
                                                 : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
                                                 }`}
@@ -212,8 +231,8 @@ const EventDetails = () => {
                                         return dates.map(dateStr => (
                                             <button
                                                 key={dateStr}
-                                                onClick={() => setSelectedDate(dateStr)}
-                                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${selectedDate?.split('T')[0] === dateStr
+                                                onClick={() => toggleDateSelection(dateStr)}
+                                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${selectedDates.includes(dateStr)
                                                     ? 'border-primary-500 bg-primary-50 text-primary-700'
                                                     : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
                                                     }`}
@@ -232,37 +251,57 @@ const EventDetails = () => {
                             {event.packages && event.packages.length > 0 ? (
                                 event.packages.map((pkg) => {
                                     const qty = selectedItems[pkg.id] || 0;
+                                    const soldQty = parseInt(pkg.sold_qty || 0);
+                                    const capacity = parseInt(pkg.capacity || 0);
+                                    const isSoldOut = capacity > 0 && soldQty >= capacity;
+                                    const remaining = Math.max(0, capacity - soldQty);
+
                                     return (
                                         <div
                                             key={pkg.id}
-                                            className={`p-5 rounded-2xl border-2 transition-all ${qty > 0 ? 'border-primary-500 bg-white shadow-lg' : 'border-slate-100 bg-white/50 hover:border-slate-200'}`}
+                                            className={`p-5 rounded-2xl border-2 transition-all ${isSoldOut ? 'opacity-60 bg-slate-50 border-slate-200' :
+                                                qty > 0 ? 'border-primary-500 bg-white shadow-lg' : 'border-slate-100 bg-white/50 hover:border-slate-200'}`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className={`text-sm font-bold uppercase tracking-wider ${qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
-                                                    {pkg.package_name}
-                                                </span>
-                                                <span className="text-xl font-extrabold text-slate-900">₹{pkg.price}</span>
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-bold uppercase tracking-wider ${isSoldOut ? 'text-slate-400' : qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
+                                                        {pkg.package_name}
+                                                    </span>
+                                                    {capacity > 0 && (
+                                                        <span className={`text-[10px] font-black uppercase tracking-tighter ${isSoldOut ? 'text-red-500' : 'text-slate-400'}`}>
+                                                            {isSoldOut ? 'SOLD OUT' : `${remaining} Tickets Left`}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className={`text-xl font-extrabold ${isSoldOut ? 'text-slate-400' : 'text-slate-900'}`}>₹{pkg.price}</span>
                                             </div>
                                             <p className="text-slate-500 text-sm mb-4 whitespace-pre-line">{pkg.features}</p>
 
                                             <div className="flex items-center justify-end">
-                                                <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                                                    <button
-                                                        onClick={() => updateQty(pkg.id, -1)}
-                                                        className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all"
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <span className={`font-bold w-4 text-center ${qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
-                                                        {qty}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => updateQty(pkg.id, 1)}
-                                                        className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+                                                {isSoldOut ? (
+                                                    <div className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100 uppercase">
+                                                        Unavailable
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl p-1">
+                                                        <button
+                                                            onClick={() => updateQty(pkg.id, -1)}
+                                                            className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all font-bold"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span className={`font-bold w-4 text-center ${qty > 0 ? 'text-primary-600' : 'text-slate-400'}`}>
+                                                            {qty}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => updateQty(pkg.id, 1)}
+                                                            disabled={capacity > 0 && (soldQty + qty) >= capacity}
+                                                            className="w-8 h-8 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-lg text-slate-500 transition-all font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -277,7 +316,12 @@ const EventDetails = () => {
                         <div className="space-y-4 pt-6 border-t border-slate-200">
                             <div className="flex items-center justify-between text-lg">
                                 <span className="font-bold text-slate-900">Total</span>
-                                <span className="font-extrabold text-primary-600 text-2xl">₹{calculateTotal()}</span>
+                                <div className="text-right">
+                                    <span className="font-extrabold text-primary-600 text-2xl">₹{calculateTotal()}</span>
+                                    {selectedDates.length > 1 && (
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase">For {selectedDates.length} days</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
