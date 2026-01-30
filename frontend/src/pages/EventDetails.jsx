@@ -27,7 +27,9 @@ const EventDetails = () => {
                 const res = await api.get(`/events/${id}`);
                 setEvent(res.data);
                 if (res.data.start_date) {
-                    setSelectedDates([res.data.start_date.split('T')[0]]);
+                    const localDate = new Date(res.data.start_date);
+                    const dateStr = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+                    setSelectedDates([dateStr]);
                 }
                 // Set initial active image
                 const mainImg = formatEventImage(res.data.banner_url) || getEventImage(res.data.category_name, res.data.title);
@@ -225,7 +227,8 @@ const EventDetails = () => {
                                         const end = new Date(event.end_date);
                                         let current = new Date(start);
                                         while (current <= end) {
-                                            dates.push(new Date(current).toISOString().split('T')[0]);
+                                            const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+                                            dates.push(dateStr);
                                             current.setDate(current.getDate() + 1);
                                         }
                                         return dates.map(dateStr => (

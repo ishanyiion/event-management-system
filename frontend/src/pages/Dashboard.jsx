@@ -51,8 +51,10 @@ const Dashboard = () => {
     const isExpired = (dateStr) => {
         if (!dateStr) return false;
         const dates = dateStr.split(',');
-        const lastDate = new Date(dates[dates.length - 1]);
-        return lastDate < new Date().setHours(0, 0, 0, 0);
+        // Get the last date and set it to the END of that day (23:59:59)
+        const parts = dates[dates.length - 1].split('-');
+        const lastDate = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59);
+        return lastDate < new Date();
     };
 
     const unpaidBookings = user.role === 'CLIENT' ? items.filter(i => i.payment_status === 'UNPAID' && !isExpired(i.booked_date)) : [];
@@ -301,7 +303,10 @@ const BookingCard = ({ item, navigate, expired }) => {
                     <p className="text-sm text-slate-500 line-clamp-1">
                         <span className={`font-black mr-2 ${expired ? 'text-slate-400' : 'text-primary-600'}`}>
                             {item.booked_date ?
-                                item.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB')).join(', ')
+                                item.booked_date.split(',').map(d => {
+                                    const [y, m, day] = d.split('-');
+                                    return `${day}/${m}/${y}`;
+                                }).join(', ')
                                 : 'N/A'}
                         </span>
                     </p>

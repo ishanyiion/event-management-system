@@ -10,7 +10,7 @@ const ConfirmPayment = () => {
     const [userName, setUserName] = useState('');
     const [userEmail, setUserEmail] = useState('');
     const [txnId, setTxnId] = useState('');
-    const [app, setApp] = useState('PHONEPE');
+    const [app, setApp] = useState('PhonePe');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -180,10 +180,10 @@ const ConfirmPayment = () => {
                                 value={app}
                                 onChange={(e) => setApp(e.target.value)}
                             >
-                                <option value="PHONEPE">PhonePe</option>
-                                <option value="GPAY">Google Pay</option>
-                                <option value="PAYTM">Paytm</option>
-                                <option value="OTHER">Other UPI</option>
+                                <option value="PhonePe">PhonePe</option>
+                                <option value="GPay">Google Pay</option>
+                                <option value="Paytm">Paytm</option>
+                                <option value="Other">Other UPI</option>
                             </select>
                         </div>
 

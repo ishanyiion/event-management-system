@@ -7,6 +7,10 @@ dotenv.config({ override: true });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const syncDatabase = require('./utils/dbSync');
+
+// Sync Database on startup
+syncDatabase();
 
 // Middleware
 app.use(cors());

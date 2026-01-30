@@ -38,6 +38,7 @@ CREATE TABLE events (
     max_capacity INTEGER DEFAULT 0,
     status event_status DEFAULT 'PENDING',
     banner_url VARCHAR(255),
+    images TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -55,7 +56,8 @@ CREATE TABLE event_packages (
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     package_name VARCHAR(100) NOT NULL, -- e.g., Basic, Standard, Premium
     price DECIMAL(10, 2) NOT NULL,
-    features TEXT -- newline separated or JSON string
+    features TEXT, -- newline separated or JSON string
+    capacity INTEGER DEFAULT 0
 );
 
 -- Bookings Table
@@ -71,6 +73,26 @@ CREATE TABLE bookings (
     total_amount DECIMAL(10, 2) NOT NULL,
     booking_status booking_status DEFAULT 'PENDING',
     payment_status payment_status DEFAULT 'UNPAID',
+    booked_date TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Booking Items Table (Missing in original schema)
+CREATE TABLE booking_items (
+    id SERIAL PRIMARY KEY,
+    booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+    package_id INTEGER REFERENCES event_packages(id) ON DELETE CASCADE,
+    qty INTEGER NOT NULL,
+    price_at_time DECIMAL(10, 2) NOT NULL
+);
+
+-- Tickets Table (Missing in original schema)
+CREATE TABLE tickets (
+    id SERIAL PRIMARY KEY,
+    booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+    package_id INTEGER REFERENCES event_packages(id) ON DELETE CASCADE,
+    ticket_number VARCHAR(50) UNIQUE NOT NULL,
+    status VARCHAR(20) DEFAULT 'VALID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -97,7 +97,14 @@ const getEvents = async (req, res) => {
         }
 
         const events = await db.query(query, params);
-        res.json(events.rows);
+
+        // Parse images JSON string for each event
+        const parsedEvents = events.rows.map(event => ({
+            ...event,
+            images: typeof event.images === 'string' ? JSON.parse(event.images) : (event.images || [])
+        }));
+
+        res.json(parsedEvents);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -121,6 +128,7 @@ const getEventById = async (req, res) => {
 
         res.json({
             ...event.rows[0],
+            images: typeof event.rows[0].images === 'string' ? JSON.parse(event.rows[0].images) : (event.rows[0].images || []),
             packages: packages.rows,
             schedule: schedule.rows
         });
@@ -253,7 +261,14 @@ const getOrganizerEvents = async (req, res) => {
              ORDER BY e.created_at DESC`,
             [organizer_id]
         );
-        res.json(events.rows);
+
+        // Parse images JSON string for each event
+        const parsedEvents = events.rows.map(event => ({
+            ...event,
+            images: typeof event.images === 'string' ? JSON.parse(event.images) : (event.images || [])
+        }));
+
+        res.json(parsedEvents);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

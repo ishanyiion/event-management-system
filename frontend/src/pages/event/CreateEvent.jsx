@@ -93,7 +93,8 @@ const CreateEvent = () => {
             let current = new Date(start);
 
             while (current <= end) {
-                days.push(new Date(current).toISOString().split('T')[0]);
+                const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+                days.push(dateStr);
                 current.setDate(current.getDate() + 1);
             }
 
