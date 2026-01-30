@@ -85,7 +85,10 @@ export const generateTicketPDF = async (ticket, booking) => {
     };
 
     drawRow('Attendee Name', booking.user_name, gridY);
-    drawRow('Event Date', booking.booked_date ? new Date(booking.booked_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A', gridY + 25);
+    const formattedDates = booking.booked_date ?
+        booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB')).join(', ')
+        : 'N/A';
+    drawRow('Event Date', formattedDates, gridY + 25);
     drawRow('Package Type', ticket.package_name, gridY + 50);
     drawRow('Entry Status', 'Single Entry • Non-Transferable', gridY + 75);
 
@@ -124,7 +127,7 @@ export const generateTicketPDF = async (ticket, booking) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 265, { align: 'center' });
+    doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 105, 265, { align: 'center' });
 
     // 11. Download the PDF
     doc.save(`Ticket_${ticket.ticket_number}.pdf`);

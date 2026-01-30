@@ -54,4 +54,14 @@ const getPendingEvents = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents };
+const getApprovedEvents = async (req, res) => {
+    try {
+        const events = await db.query('SELECT e.*, u.name as organizer_name, c.name as category_name FROM events e JOIN users u ON e.organizer_id = u.id LEFT JOIN categories c ON e.category_id = c.id WHERE e.status = \'APPROVED\' ORDER BY e.created_at DESC');
+        res.json(events.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents, getApprovedEvents };

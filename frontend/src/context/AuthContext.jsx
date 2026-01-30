@@ -12,15 +12,12 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    // You could add an endpoint /api/auth/me for this
-                    // For now, we'll just parse the token or use stored user info
-                    const storedUser = localStorage.getItem('user');
-                    if (storedUser) {
-                        setUser(JSON.parse(storedUser));
-                    }
+                    const res = await api.get('/auth/me');
+                    setUser(res.data);
+                    localStorage.setItem('user', JSON.stringify(res.data));
                 } catch (err) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
+                    console.error('Session verification failed:', err);
+                    logout();
                 }
             }
             setLoading(false);

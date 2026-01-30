@@ -132,7 +132,7 @@ const EventGrid = () => {
                                         <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary-600 shadow-sm">
                                             {event.category_name}
                                         </div>
-                                        {new Date(event.end_date) < new Date() && (
+                                        {new Date(event.end_date).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0) && (
                                             <div className="bg-amber-500/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm flex items-center gap-1">
                                                 <CheckCircle className="w-3 h-3" /> Completed
                                             </div>
