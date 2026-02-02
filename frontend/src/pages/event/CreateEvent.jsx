@@ -100,8 +100,8 @@ const CreateEvent = () => {
 
             const newSchedule = days.map(date => {
                 const existing = schedule.find(s => s.date === date);
-                // Default to 10:00 AM - 6:00 PM if new day
-                return existing || { date, startTime: '10:00', endTime: '18:00' };
+                // Default to 10:00 AM - 6:00 PM if new day, with global max_capacity
+                return existing || { date, startTime: '10:00', endTime: '18:00', capacity: formData.max_capacity };
             });
             setSchedule(newSchedule);
         }
@@ -148,6 +148,12 @@ const CreateEvent = () => {
 
         if (selectedFiles.length === 0) {
             setError('At least one event image is compulsory.');
+            return;
+        }
+
+        const totalPackageCapacity = packages.reduce((sum, pkg) => sum + parseInt(pkg.capacity || 0), 0);
+        if (totalPackageCapacity > parseInt(formData.max_capacity)) {
+            setError(`Total package capacity (${totalPackageCapacity}) cannot exceed event capacity (${formData.max_capacity})`);
             return;
         }
 
@@ -363,10 +369,22 @@ const CreateEvent = () => {
                                 <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                     {schedule.map((item, idx) => (
                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 gap-3">
-                                            <div className="font-bold text-slate-700 text-sm">
+                                            <div className="font-bold text-slate-700 text-sm w-24">
                                                 {new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <input
+                                                    type="number"
+                                                    className="input py-1 px-2 text-xs w-20"
+                                                    placeholder="Cap"
+                                                    title="Daily Capacity"
+                                                    value={item.capacity}
+                                                    onChange={(e) => {
+                                                        const newS = [...schedule];
+                                                        newS[idx].capacity = e.target.value;
+                                                        setSchedule(newS);
+                                                    }}
+                                                />
                                                 <TimeInput12h
                                                     value={item.startTime}
                                                     onChange={(val) => {

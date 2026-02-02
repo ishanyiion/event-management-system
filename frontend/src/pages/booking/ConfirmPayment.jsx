@@ -158,7 +158,16 @@ const ConfirmPayment = () => {
                                 <div className="space-y-2">
                                     {booking.items.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center text-sm">
-                                            <span className="text-slate-600 font-medium">{item.package_name} <span className="text-slate-400">x{item.qty}</span></span>
+                                            <div className="flex flex-col">
+                                                <span className="text-slate-600 font-medium">
+                                                    {item.package_name} <span className="text-slate-400">x{item.qty}</span>
+                                                </span>
+                                                {item.event_date && (
+                                                    <span className="text-[10px] uppercase font-bold text-primary-600">
+                                                        {new Date(item.event_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-slate-900 font-bold">₹{item.price_at_time * item.qty}</span>
                                         </div>
                                     ))}

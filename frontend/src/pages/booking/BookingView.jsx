@@ -137,6 +137,15 @@ const BookingView = () => {
                                         <h4 className={`text-xl font-black uppercase ${theme.text}`}>{ticket.package_name} PASS</h4>
                                         <p className="text-xs text-slate-500 mt-1">Single Entry • Non-Transferable</p>
 
+                                        {ticket.event_date && (
+                                            <div className="mt-3 inline-block px-3 py-1 rounded-lg bg-white/50 border border-slate-200 backdrop-blur-sm">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    {new Date(ticket.event_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        )}
+
                                         {/* Notch Cutouts */}
                                         <div className={`absolute -bottom-3 -left-3 w-6 h-6 rounded-full border-r-2 border-slate-200 group-hover:border-primary-200 transition-colors ${theme.header}`}></div>
                                         <div className={`absolute -bottom-3 -right-3 w-6 h-6 rounded-full border-l-2 border-slate-200 group-hover:border-primary-200 transition-colors ${theme.header}`}></div>

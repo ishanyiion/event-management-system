@@ -9,6 +9,14 @@ const createEvent = async (req, res) => {
         if (typeof packages === 'string') packages = JSON.parse(packages);
         if (typeof schedule === 'string') schedule = JSON.parse(schedule);
 
+        // Validate Package Capacities
+        if (packages && packages.length > 0) {
+            const totalPackageCapacity = packages.reduce((sum, pkg) => sum + parseInt(pkg.capacity || 0), 0);
+            if (totalPackageCapacity > parseInt(max_capacity)) {
+                return res.status(400).json({ message: `Total package capacity (${totalPackageCapacity}) cannot exceed event capacity (${max_capacity})` });
+            }
+        }
+
         // Check if organizer is verified
         const user = await db.query('SELECT status FROM users WHERE id = $1', [organizer_id]);
         if (user.rows[0].status !== 'ACTIVE') {
@@ -46,15 +54,15 @@ const createEvent = async (req, res) => {
         if (schedule && schedule.length > 0) {
             for (const item of schedule) {
                 await db.query(
-                    'INSERT INTO event_schedules (event_id, event_date, start_time, end_time) VALUES ($1, $2, $3, $4)',
-                    [eventId, item.date, item.startTime, item.endTime]
+                    'INSERT INTO event_schedules (event_id, event_date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [eventId, item.date, item.startTime, item.endTime, item.capacity || max_capacity] // Default to global max if not set
                 );
             }
         } else {
             // Fallback: create a single schedule entry
             await db.query(
-                'INSERT INTO event_schedules (event_id, event_date, start_time, end_time) VALUES ($1, $2, $3, $4)',
-                [eventId, start_date, start_time, end_time]
+                'INSERT INTO event_schedules (event_id, event_date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5)',
+                [eventId, start_date, start_time, end_time, max_capacity]
             );
         }
 
@@ -223,7 +231,24 @@ const getEventAnalytics = async (req, res) => {
         };
         stats.remaining = Math.max(0, stats.totalCapacity - stats.totalSold);
 
-        // 4. Bookings List
+        // 4. Day-Wise Stats
+        const dailyStatsRes = await db.query(
+            `SELECT 
+                es.event_date,
+                es.capacity as daily_capacity,
+                COALESCE(SUM(bi.qty), 0) as daily_sold,
+                COALESCE(SUM(bi.qty * bi.price_at_time), 0) as daily_revenue
+             FROM event_schedules es
+             LEFT JOIN booking_items bi ON bi.event_date = es.event_date AND bi.booking_id IN (
+                SELECT id FROM bookings WHERE event_id = $1 AND booking_status = 'CONFIRMED'
+             )
+             WHERE es.event_id = $1
+             GROUP BY es.event_date, es.capacity
+             ORDER BY es.event_date ASC`,
+            [id]
+        );
+
+        // 5. Bookings List
         const bookingsRes = await db.query(
             `SELECT b.id as booking_id, b.total_amount, b.booking_status, b.payment_status, b.created_at as booking_date, b.booked_date,
              u.name as person_name, u.email,
@@ -242,6 +267,7 @@ const getEventAnalytics = async (req, res) => {
             event,
             stats,
             packages: packagesRes.rows,
+            dailyStats: dailyStatsRes.rows,
             bookings: bookingsRes.rows
         });
     } catch (err) {

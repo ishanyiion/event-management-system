@@ -2,14 +2,17 @@ const db = require('../config/db');
 const { sendReceipt } = require('../utils/emailService');
 
 const createBooking = async (req, res) => {
-    const { event_id, items, booked_date } = req.body; // items = [{ package_id, qty }], booked_date = array or string
+    const { event_id, items, booked_date } = req.body;
+    // New items format expected from frontend: 
+    // items = [{ package_id, qty, date }] 
+    // OR legacy format: items = [{ package_id, qty }], booked_date = [date1, date2]
+
     const client_id = req.user.id;
 
     if (!items || items.length === 0) {
+        // If legacy format is sent with empty items but valid logic (unlikely)
         return res.status(400).json({ message: 'No items selected for booking' });
     }
-
-    const booked_dates = Array.isArray(booked_date) ? booked_date : [booked_date];
 
     try {
         await db.query('BEGIN');
@@ -21,42 +24,83 @@ const createBooking = async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        const totalRequestedQtyPerDay = items.reduce((sum, item) => sum + parseInt(item.qty), 0);
-        const totalRequestedQtyAcrossAllDays = totalRequestedQtyPerDay * booked_dates.length;
+        // Normalize items to day-wise format
+        let flattenedItems = [];
+        let datesSet = new Set();
 
-        // 2. Check Capacity (Simplified: check total for each day or total overall)
-        // User requested "select both day together", if max_capacity is 100, 
-        // does it mean 100 for the whole event or 100 per day?
-        // Assuming max_capacity is total for the event in this current schema.
+        // Check if using legacy format (booked_date global array + non-dated items)
+        if (booked_date && Array.isArray(booked_date) && booked_date.length > 0 && !items[0].date) {
+            // Legacy/Global mode: Apply all items to all dates
+            for (const date of booked_date) {
+                datesSet.add(date);
+                for (const item of items) {
+                    if (item.qty > 0) {
+                        flattenedItems.push({
+                            package_id: item.package_id,
+                            qty: parseInt(item.qty),
+                            date: date
+                        });
+                    }
+                }
+            }
+        } else {
+            // New Day-Wise mode: Items already contain date
+            for (const item of items) {
+                if (item.qty > 0) {
+                    flattenedItems.push({
+                        package_id: item.package_id,
+                        qty: parseInt(item.qty),
+                        date: item.date // Expecting 'YYYY-MM-DD'
+                    });
+                    if (item.date) datesSet.add(item.date);
+                }
+            }
+        }
 
+        if (flattenedItems.length === 0) {
+            await db.query('ROLLBACK');
+            return res.status(400).json({ message: 'No items with quantity > 0 selected.' });
+        }
+
+        const bookedDatesArray = Array.from(datesSet);
+        const totalRequestedQty = flattenedItems.reduce((sum, item) => sum + item.qty, 0);
+
+        // 2. Check Event Capacity (Total tickets vs Max Capacity)
         const confirmedBookings = await db.query(
             'SELECT SUM(qty) as total FROM bookings WHERE event_id = $1 AND booking_status = \'CONFIRMED\'',
             [event_id]
         );
         const currentQty = parseInt(confirmedBookings.rows[0].total || 0);
 
-        if (currentQty + totalRequestedQtyAcrossAllDays > eventRes.rows[0].max_capacity) {
+        if (currentQty + totalRequestedQty > eventRes.rows[0].max_capacity) {
             await db.query('ROLLBACK');
             return res.status(400).json({ message: 'Event is fully booked or requested quantity exceeds capacity.' });
         }
 
-        // 3. Calculate Amount and Verify Packages
-        let base_amount = 0;
-        const itemsWithPrices = [];
+        // 3. Calculate Amount and Verify Package Capacities
+        let total_amount = 0;
+        const itemsWithDetails = [];
 
-        for (const item of items) {
+        for (const item of flattenedItems) {
             const pkgRes = await db.query('SELECT price, capacity, package_name FROM event_packages WHERE id = $1 AND event_id = $2', [item.package_id, event_id]);
             if (pkgRes.rows.length === 0) {
                 await db.query('ROLLBACK');
-                return res.status(404).json({ message: `Package ${item.package_id} not found for this event` });
+                return res.status(404).json({ message: `Package ${item.package_id} not found` });
             }
 
             const pkg = pkgRes.rows[0];
             const price = parseFloat(pkg.price);
             const packageCapacity = parseInt(pkg.capacity || 0);
 
-            // Check specific package capacity if set (> 0)
+            // Check package capacity
             if (packageCapacity > 0) {
+                // Get total sold for this package across all dates (assuming capacity is total package limit)
+                // OR is capacity per day? "capacity 50" usually means 50 people can have this package total?
+                // The implementation plan says "sum of all package capacities must not exceed Event Capacity"
+                // which implies GLOBAL capacity.
+                // However, if I buy Package A for Day 1 and Package A for Day 2, does it count as 2 spots?
+                // Yes, simpler to treat capacity as absolute ticket count.
+
                 const confirmedPkgBookings = await db.query(
                     `SELECT SUM(bi.qty) as total 
                      FROM booking_items bi 
@@ -65,41 +109,93 @@ const createBooking = async (req, res) => {
                     [item.package_id]
                 );
                 const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
-                const requestedPkgQtyAcrossAllDays = item.qty * booked_dates.length;
 
-                if (currentPkgQty + requestedPkgQtyAcrossAllDays > packageCapacity) {
+                // We need to be careful not to double count if we are iterating.
+                // But here we are iterating items one by one.
+                // To do this correctly efficiently, we should sum up request per package first.
+            }
+            // Optimization: We'll do a second pass or sum map for capacity check if needed.
+            // For now, let's trust the global check + simple check (slightly inefficient but safe if concurrency low)
+            // Actually, let's just add to itemsWithDetails and check capacity later if strict.
+            // ... omitting strict strict package concurrency check optimization for brevity ...
+
+            // Re-checked logic: The initial global event capacity check covers the main constraint.
+            // Package specific capacity:
+            if (packageCapacity > 0) {
+                const confirmedPkgBookings = await db.query(
+                    `SELECT SUM(bi.qty) as total 
+                      FROM booking_items bi 
+                      JOIN bookings b ON bi.booking_id = b.id 
+                      WHERE bi.package_id = $1 AND b.booking_status = 'CONFIRMED'`,
+                    [item.package_id]
+                );
+                // Warning: This query is inside loop, not ideal for bulk but okay for small cart.
+                // Also, it needs to account for other items in *this* current cart for same package.
+                const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
+                const currentCartPkgQty = flattenedItems
+                    .filter(i => i.package_id === item.package_id)
+                    .reduce((s, i) => s + i.qty, 0);
+
+                if (currentPkgQty + currentCartPkgQty > packageCapacity) {
                     await db.query('ROLLBACK');
                     return res.status(400).json({
-                        message: `The ${pkg.package_name} package is sold out or requested quantity exceeds its capacity (${packageCapacity - currentPkgQty} left).`
+                        message: `The ${pkg.package_name} package is sold out or requested quantity exceeds its capacity.`
                     });
                 }
             }
 
-            base_amount += price * item.qty;
-            itemsWithPrices.push({ ...item, price });
+            // Day-wise Capacity Check
+            if (item.date) {
+                const dayCapRes = await db.query(
+                    'SELECT capacity FROM event_schedules WHERE event_id = $1 AND event_date = $2',
+                    [event_id, item.date]
+                );
+
+                if (dayCapRes.rows.length > 0 && dayCapRes.rows[0].capacity > 0) {
+                    const dayCapacity = dayCapRes.rows[0].capacity;
+
+                    const daySoldRes = await db.query(
+                        `SELECT SUM(bi.qty) as total FROM booking_items bi 
+                        JOIN bookings b ON bi.booking_id = b.id 
+                        WHERE b.event_id = $1 AND bi.event_date = $2 AND b.booking_status = 'CONFIRMED'`,
+                        [event_id, item.date]
+                    );
+
+                    const currentDaySold = parseInt(daySoldRes.rows[0].total || 0);
+
+                    // Count quantity for THIS day in current cart request
+                    const cartDayQty = flattenedItems
+                        .filter(i => i.date === item.date)
+                        .reduce((s, i) => s + i.qty, 0);
+
+                    if (currentDaySold + cartDayQty > dayCapacity) {
+                        await db.query('ROLLBACK');
+                        return res.status(400).json({
+                            message: `Tickets for ${item.date} are sold out (Capacity: ${dayCapacity}).`
+                        });
+                    }
+                }
+            }
+
+            total_amount += price * item.qty;
+            itemsWithDetails.push({ ...item, price });
         }
 
-        const total_amount = base_amount * booked_dates.length;
-
         // 4. Create Booking
-        // Since booked_date is now an array, we store it as a comma separated string for now if the DB is DATE
-        // Or we should update the DB to support arrays. 
-        // To be safe and compatible with current DATE column, we'll store only the first date if it's strictly DATE
-        // BUT the user wants to see BOTH. So let's use a migration to change it to TEXT or DATE[].
-
-        const dateValue = booked_dates.join(','); // comma separated string for flexibility
+        // store dates as comma string for high-level view
+        const dateValue = bookedDatesArray.join(',');
 
         const newBooking = await db.query(
             'INSERT INTO bookings (event_id, client_id, total_amount, qty, booked_date) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [event_id, client_id, total_amount, totalRequestedQtyAcrossAllDays, dateValue]
+            [event_id, client_id, total_amount, totalRequestedQty, dateValue]
         );
         const bookingId = newBooking.rows[0].id;
 
-        // 5. Create Booking Items
-        for (const item of itemsWithPrices) {
+        // 5. Create Booking Items with Dates
+        for (const item of itemsWithDetails) {
             await db.query(
-                'INSERT INTO booking_items (booking_id, package_id, qty, price_at_time) VALUES ($1, $2, $3, $4)',
-                [bookingId, item.package_id, item.qty * booked_dates.length, item.price]
+                'INSERT INTO booking_items (booking_id, package_id, qty, price_at_time, event_date) VALUES ($1, $2, $3, $4, $5)',
+                [bookingId, item.package_id, item.qty, item.price, item.date]
             );
         }
 
@@ -148,8 +244,8 @@ const confirmPayment = async (req, res) => {
             for (let i = 0; i < item.qty; i++) {
                 const ticketNumber = `EH-${bookingRes.rows[0].event_id}-${booking_id}-${Math.floor(1000 + Math.random() * 9000)}-${i + 1}`;
                 await db.query(
-                    'INSERT INTO tickets (booking_id, package_id, ticket_number) VALUES ($1, $2, $3)',
-                    [booking_id, item.package_id, ticketNumber]
+                    'INSERT INTO tickets (booking_id, package_id, ticket_number, event_date) VALUES ($1, $2, $3, $4)',
+                    [booking_id, item.package_id, ticketNumber, item.event_date]
                 );
             }
         }
