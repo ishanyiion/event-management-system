@@ -218,18 +218,20 @@ const getEventAnalytics = async (req, res) => {
         const packagesRes = await db.query(
             `SELECT p.*, 
              COALESCE((SELECT SUM(bi.qty) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as sold_qty,
-             COALESCE((SELECT SUM(bi.qty * bi.price_at_time) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as category_revenue
+             COALESCE((SELECT SUM(bi.qty * bi.price_at_time) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as category_revenue,
+             (
+                SELECT json_agg(json_build_object('date', ds.d, 'count', ds.c))
+                FROM (
+                    SELECT bi.event_date as d, SUM(bi.qty) as c
+                    FROM booking_items bi 
+                    JOIN bookings b ON bi.booking_id = b.id
+                    WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'
+                    GROUP BY bi.event_date
+                ) ds
+             ) as daily_breakdown
              FROM event_packages p WHERE p.event_id = $1`,
             [id]
         );
-
-        // 3. Overall Stats
-        const stats = {
-            totalCapacity: packagesRes.rows.reduce((sum, p) => sum + parseInt(p.capacity || 0), 0) || event.max_capacity,
-            totalSold: packagesRes.rows.reduce((sum, p) => sum + parseInt(p.sold_qty || 0), 0),
-            totalRevenue: packagesRes.rows.reduce((sum, p) => sum + parseFloat(p.category_revenue || 0), 0)
-        };
-        stats.remaining = Math.max(0, stats.totalCapacity - stats.totalSold);
 
         // 4. Day-Wise Stats
         const dailyStatsRes = await db.query(
@@ -247,6 +249,14 @@ const getEventAnalytics = async (req, res) => {
              ORDER BY es.event_date ASC`,
             [id]
         );
+
+        // 3. Overall Stats (Now aggregated from daily stats)
+        const stats = {
+            totalCapacity: dailyStatsRes.rows.reduce((sum, row) => sum + parseInt(row.daily_capacity || 0), 0),
+            totalSold: dailyStatsRes.rows.reduce((sum, row) => sum + parseInt(row.daily_sold || 0), 0),
+            totalRevenue: dailyStatsRes.rows.reduce((sum, row) => sum + parseFloat(row.daily_revenue || 0), 0)
+        };
+        stats.remaining = Math.max(0, stats.totalCapacity - stats.totalSold);
 
         // 5. Bookings List
         const bookingsRes = await db.query(

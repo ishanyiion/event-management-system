@@ -107,61 +107,47 @@ const EventAnalytics = () => {
 
                                         <div className="grid grid-cols-3 gap-2">
                                             <div className="bg-slate-100 p-2 rounded-xl text-center">
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Total</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Daily Limit</p>
                                                 <p className="font-bold text-slate-700">{pkg.capacity || '∞'}</p>
                                             </div>
                                             <div className="bg-green-50 p-2 rounded-xl text-center">
-                                                <p className="text-[10px] text-green-400 font-bold uppercase">Sold</p>
+                                                <p className="text-[10px] text-green-400 font-bold uppercase">Total Sold</p>
                                                 <p className="font-bold text-green-700">{pkg.sold_qty}</p>
                                             </div>
                                             <div className="bg-amber-50 p-2 rounded-xl text-center">
-                                                <p className="text-[10px] text-amber-400 font-bold uppercase">Left</p>
-                                                <p className="font-bold text-amber-700">{Math.max(0, (pkg.capacity || 0) - pkg.sold_qty)}</p>
+                                                {/* Since limit is daily, 'Total Left' is ambiguous. Showing 'Today Left' would require today's date context. 
+                                                    Instead, implies availability per day. Cleanest is to remove Global Left or show 'Daily Left' if we knew the day. 
+                                                    Let's show 'Revenue' here instead or keep it empty/different stat. */}
+                                                <p className="text-[10px] text-amber-400 font-bold uppercase">Status</p>
+                                                <p className="font-bold text-amber-700 text-xs py-1">ACTIVE</p>
                                             </div>
                                         </div>
+
+                                        {/* Daily Breakdown */}
+                                        {pkg.daily_breakdown && pkg.daily_breakdown.length > 0 && (
+                                            <div className="mt-3 pt-3 border-t border-slate-100">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-2">Daily Sales</p>
+                                                <div className="space-y-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                                                    {pkg.daily_breakdown.map((d, i) => (
+                                                        <div key={i} className="flex justify-between text-xs">
+                                                            <span className="text-slate-600 font-medium">
+                                                                {new Date(d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                            </span>
+                                                            <span className={`font-bold ${d.count >= (pkg.capacity || 0) ? 'text-red-600' : 'text-slate-800'}`}>
+                                                                {d.count} / {pkg.capacity || '∞'} Sold
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             )}
                         </div>
                     </div>
 
-                    <div className="space-y-4 pt-4">
-                        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-primary-500" /> Day-Wise Sales
-                        </h3>
-                        <div className="card overflow-hidden border-slate-200">
-                            <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                {data.dailyStats && data.dailyStats.length > 0 ? (
-                                    data.dailyStats.map((day, idx) => (
-                                        <div key={idx} className="p-4 hover:bg-slate-50/50 transition-colors">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <p className="font-bold text-slate-700">{new Date(day.event_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
-                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${parseInt(day.daily_sold) >= parseInt(day.daily_capacity) && parseInt(day.daily_capacity) > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                                                    {parseInt(day.daily_sold) >= parseInt(day.daily_capacity) && parseInt(day.daily_capacity) > 0 ? 'SOLD OUT' : 'AVAILABLE'}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-2 text-center">
-                                                <div className="bg-slate-50 p-1.5 rounded-lg">
-                                                    <p className="text-[10px] text-slate-400 font-bold">Cap</p>
-                                                    <p className="font-bold text-slate-600">{day.daily_capacity}</p>
-                                                </div>
-                                                <div className="bg-green-50 p-1.5 rounded-lg">
-                                                    <p className="text-[10px] text-green-600 font-bold">Sold</p>
-                                                    <p className="font-bold text-green-700">{day.daily_sold}</p>
-                                                </div>
-                                                <div className="bg-amber-50 p-1.5 rounded-lg">
-                                                    <p className="text-[10px] text-amber-600 font-bold">Left</p>
-                                                    <p className="font-bold text-amber-700">{Math.max(0, parseInt(day.daily_capacity) - parseInt(day.daily_sold))}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="p-4 text-center text-slate-400 text-xs">No daily stats available</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* 4. BOOKINGS LIST (TABLE) */}

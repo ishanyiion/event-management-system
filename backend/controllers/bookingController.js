@@ -122,25 +122,53 @@ const createBooking = async (req, res) => {
             // Re-checked logic: The initial global event capacity check covers the main constraint.
             // Package specific capacity:
             if (packageCapacity > 0) {
-                const confirmedPkgBookings = await db.query(
-                    `SELECT SUM(bi.qty) as total 
-                      FROM booking_items bi 
-                      JOIN bookings b ON bi.booking_id = b.id 
-                      WHERE bi.package_id = $1 AND b.booking_status = 'CONFIRMED'`,
-                    [item.package_id]
-                );
-                // Warning: This query is inside loop, not ideal for bulk but okay for small cart.
-                // Also, it needs to account for other items in *this* current cart for same package.
-                const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
-                const currentCartPkgQty = flattenedItems
-                    .filter(i => i.package_id === item.package_id)
-                    .reduce((s, i) => s + i.qty, 0);
+                let confirmedPkgBookings;
 
-                if (currentPkgQty + currentCartPkgQty > packageCapacity) {
-                    await db.query('ROLLBACK');
-                    return res.status(400).json({
-                        message: `The ${pkg.package_name} package is sold out or requested quantity exceeds its capacity.`
-                    });
+                if (item.date) {
+                    // Check capacity for this specific day
+                    confirmedPkgBookings = await db.query(
+                        `SELECT SUM(bi.qty) as total 
+                          FROM booking_items bi 
+                          JOIN bookings b ON bi.booking_id = b.id 
+                          WHERE bi.package_id = $1 
+                          AND bi.event_date = $2
+                          AND b.booking_status = 'CONFIRMED'`,
+                        [item.package_id, item.date]
+                    );
+
+                    const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
+                    const currentCartPkgQty = flattenedItems
+                        .filter(i => i.package_id === item.package_id && i.date === item.date)
+                        .reduce((s, i) => s + i.qty, 0);
+
+                    if (currentPkgQty + currentCartPkgQty > packageCapacity) {
+                        await db.query('ROLLBACK');
+                        return res.status(400).json({
+                            message: `The ${pkg.package_name} package is sold out for ${new Date(item.date).toLocaleDateString()}.`
+                        });
+                    }
+
+                } else {
+                    // Legacy Global Check
+                    confirmedPkgBookings = await db.query(
+                        `SELECT SUM(bi.qty) as total 
+                          FROM booking_items bi 
+                          JOIN bookings b ON bi.booking_id = b.id 
+                          WHERE bi.package_id = $1 AND b.booking_status = 'CONFIRMED'`,
+                        [item.package_id]
+                    );
+
+                    const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
+                    const currentCartPkgQty = flattenedItems
+                        .filter(i => i.package_id === item.package_id)
+                        .reduce((s, i) => s + i.qty, 0);
+
+                    if (currentPkgQty + currentCartPkgQty > packageCapacity) {
+                        await db.query('ROLLBACK');
+                        return res.status(400).json({
+                            message: `The ${pkg.package_name} package is sold out or requested quantity exceeds its capacity.`
+                        });
+                    }
                 }
             }
 
