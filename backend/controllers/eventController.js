@@ -239,7 +239,7 @@ const getEventAnalytics = async (req, res) => {
                 COALESCE(SUM(bi.qty), 0) as daily_sold,
                 COALESCE(SUM(bi.qty * bi.price_at_time), 0) as daily_revenue
              FROM event_schedules es
-             LEFT JOIN booking_items bi ON bi.event_date = es.event_date AND bi.booking_id IN (
+             LEFT JOIN booking_items bi ON bi.event_date::DATE = es.event_date AND bi.booking_id IN (
                 SELECT id FROM bookings WHERE event_id = $1 AND booking_status = 'CONFIRMED'
              )
              WHERE es.event_id = $1
