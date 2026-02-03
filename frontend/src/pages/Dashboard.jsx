@@ -26,12 +26,7 @@ const Dashboard = () => {
                     setItems(res.data);
                 } else {
                     const res = await api.get('/bookings/my');
-                    const sorted = res.data.sort((a, b) => {
-                        const dateA = a.booked_date ? new Date(a.booked_date.split(',')[0]) : new Date(0);
-                        const dateB = b.booked_date ? new Date(b.booked_date.split(',')[0]) : new Date(0);
-                        return dateB - dateA;
-                    });
-                    setItems(sorted);
+                    setItems(res.data);
                 }
             } catch (err) {
                 console.error(err);

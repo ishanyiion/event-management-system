@@ -85,9 +85,13 @@ const createEvent = async (req, res) => {
 
 const getEvents = async (req, res) => {
     try {
-        const { city, category, search } = req.query;
+        const { city, category, search, upcoming } = req.query;
         let query = 'SELECT e.*, c.name as category_name FROM events e LEFT JOIN categories c ON e.category_id = c.id WHERE e.status = \'APPROVED\'';
         const params = [];
+
+        if (upcoming === 'true') {
+            query += ' AND e.end_date >= CURRENT_DATE';
+        }
 
         if (city) {
             params.push(`%${city}%`);

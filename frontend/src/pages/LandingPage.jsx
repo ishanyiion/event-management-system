@@ -17,8 +17,8 @@ const LandingPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch events
-                const eventsRes = await api.get('/events');
+                // Fetch upcoming events for featured carousel
+                const eventsRes = await api.get('/events', { params: { upcoming: true } });
                 setEvents(eventsRes.data.slice(0, 6)); // Show top 6 for carousel
 
                 // Fetch real categories

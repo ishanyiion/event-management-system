@@ -18,10 +18,22 @@ const createBooking = async (req, res) => {
         await db.query('BEGIN');
 
         // 1. Get event details
-        const eventRes = await db.query('SELECT max_capacity FROM events WHERE id = $1', [event_id]);
+        const eventRes = await db.query('SELECT max_capacity, end_date FROM events WHERE id = $1', [event_id]);
         if (eventRes.rows.length === 0) {
             await db.query('ROLLBACK');
             return res.status(404).json({ message: 'Event not found' });
+        }
+
+        const event = eventRes.rows[0];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const eventEndDate = new Date(event.end_date);
+        eventEndDate.setHours(0, 0, 0, 0);
+
+        if (eventEndDate < today) {
+            await db.query('ROLLBACK');
+            return res.status(400).json({ message: 'This event has already ended and is no longer accepting bookings.' });
         }
 
         // Normalize items to day-wise format
@@ -47,6 +59,14 @@ const createBooking = async (req, res) => {
             // New Day-Wise mode: Items already contain date
             for (const item of items) {
                 if (item.qty > 0) {
+                    const itemDate = new Date(item.date);
+                    itemDate.setHours(0, 0, 0, 0);
+
+                    if (itemDate < today) {
+                        await db.query('ROLLBACK');
+                        return res.status(400).json({ message: `Cannot book for a past date: ${item.date}` });
+                    }
+
                     flattenedItems.push({
                         package_id: item.package_id,
                         qty: parseInt(item.qty),
@@ -314,7 +334,8 @@ const getMyBookings = async (req, res) => {
             FROM bookings b 
             JOIN events e ON b.event_id = e.id 
             JOIN categories c ON e.category_id = c.id
-            WHERE b.client_id = $1`,
+            WHERE b.client_id = $1
+            ORDER BY b.created_at DESC`,
             [req.user.id]
         );
         res.json(bookings.rows);
