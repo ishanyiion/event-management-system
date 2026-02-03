@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Plus, Trash, ArrowRight, Info, Search, Clock } from 'lucide-react';
+import { Calendar, MapPin, Plus, Trash, ArrowRight, Info, Search, Clock, X, Upload, Tag, Trash2, IndianRupee, Image as ImageIcon, AlertCircle, Save, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import api from '../../utils/api';
+import { showError, showSuccess } from '../../utils/swalHelper';
 
 const TimeInput12h = ({ value, onChange, className = "" }) => {
     const [h24, m] = (value || "10:00").split(':');
@@ -115,13 +116,13 @@ const CreateEvent = () => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
+        const newFiles = [...selectedFiles, ...files];
         // Validation: Max 5 images
-        if (selectedFiles.length + files.length > 5) {
-            alert('Maximum 5 images allowed');
+        if (newFiles.length > 5) {
+            showError('Too Many Images', 'You can only upload up to 5 images.');
             return;
         }
 
-        const newFiles = [...selectedFiles, ...files];
         setSelectedFiles(newFiles);
 
         const newPreviews = files.map(file => URL.createObjectURL(file));
@@ -193,9 +194,12 @@ const CreateEvent = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
+            await showSuccess('Event Created!', 'Your event has been submitted and is pending approval.');
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create event');
+            const msg = err.response?.data?.message || 'Failed to create event';
+            setError(msg);
+            showError('Creation Failed', msg);
         } finally {
             setLoading(false);
         }
@@ -349,6 +353,7 @@ const CreateEvent = () => {
                                 <input
                                     type="date"
                                     className="input"
+                                    min={new Date().toISOString().split('T')[0]}
                                     value={formData.start_date}
                                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                                     required
@@ -359,6 +364,7 @@ const CreateEvent = () => {
                                 <input
                                     type="date"
                                     className="input"
+                                    min={formData.start_date || new Date().toISOString().split('T')[0]}
                                     value={formData.end_date}
                                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                                     required

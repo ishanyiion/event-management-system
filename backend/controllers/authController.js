@@ -40,6 +40,10 @@ const login = async (req, res) => {
 
         const user = userResult.rows[0];
 
+        if (user.status === 'BLOCKED') {
+            return res.status(403).json({ message: 'Your account has been blocked. Please contact support.' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -69,13 +73,19 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
     try {
         const userResult = await db.query(
-            'SELECT id, name, email, role FROM users WHERE id = $1',
+            'SELECT id, name, email, role, status FROM users WHERE id = $1',
             [req.user.id]
         );
         if (userResult.rows.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(userResult.rows[0]);
+
+        const user = userResult.rows[0];
+        if (user.status === 'BLOCKED') {
+            return res.status(403).json({ message: 'Account blocked' });
+        }
+
+        res.json(user);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

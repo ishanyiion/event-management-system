@@ -5,6 +5,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { getEventImage, formatEventImage } from '../utils/eventImages';
 import { formatTimeAMPM } from '../utils/formatTime';
+import { showError, showWarning } from '../utils/swalHelper';
 
 const formatDateSafe = (dateStr, options = { day: '2-digit', month: '2-digit', year: 'numeric' }) => {
     if (!dateStr || typeof dateStr !== 'string') return dateStr;
@@ -80,7 +81,16 @@ const EventDetails = () => {
 
     const handleBook = async () => {
         if (!user) return navigate('/login');
-        if (user.role !== 'CLIENT') return alert('Only clients can book events.');
+
+        // Allowed roles: CLIENT, ADMIN, ORGANIZER (except for their own event)
+        const allowedRoles = ['CLIENT', 'ADMIN', 'ORGANIZER'];
+        if (!allowedRoles.includes(user.role)) {
+            return showWarning('Access Denied', 'Your account type is not authorized to book events.');
+        }
+
+        if (user.role === 'ORGANIZER' && String(event.organizer_id) === String(user.id)) {
+            return showWarning('Restricted', 'As an organizer, you cannot book tickets for your own event.');
+        }
 
         // Flatten cart to items array
         let items = [];
@@ -96,7 +106,7 @@ const EventDetails = () => {
             });
         });
 
-        if (items.length === 0) return alert('Please select at least one ticket.');
+        if (items.length === 0) return showWarning('Empty Cart', 'Please select at least one ticket before booking.');
 
         setBookingLoading(true);
         try {

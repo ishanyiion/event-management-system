@@ -18,13 +18,19 @@ const createBooking = async (req, res) => {
         await db.query('BEGIN');
 
         // 1. Get event details
-        const eventRes = await db.query('SELECT max_capacity, end_date FROM events WHERE id = $1', [event_id]);
+        const eventRes = await db.query('SELECT max_capacity, end_date, organizer_id FROM events WHERE id = $1', [event_id]);
         if (eventRes.rows.length === 0) {
             await db.query('ROLLBACK');
             return res.status(404).json({ message: 'Event not found' });
         }
 
         const event = eventRes.rows[0];
+
+        // 1.1 Ownership Check: Organizers cannot book their own event
+        if (req.user.role === 'ORGANIZER' && String(event.organizer_id) === String(req.user.id)) {
+            await db.query('ROLLBACK');
+            return res.status(403).json({ message: 'Organizers cannot book tickets for their own events.' });
+        }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 

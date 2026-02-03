@@ -85,10 +85,10 @@ export const generateTicketPDF = async (ticket, booking) => {
     };
 
     drawRow('Attendee Name', booking.user_name, gridY);
-    const formattedDates = booking.booked_date ?
-        booking.booked_date.split(',').map(d => new Date(d).toLocaleDateString('en-GB')).join(', ')
-        : 'N/A';
-    drawRow('Event Date', formattedDates, gridY + 25);
+    const ticketDate = ticket.event_date
+        ? new Date(ticket.event_date).toLocaleDateString('en-GB')
+        : (booking.booked_date ? new Date(booking.booked_date.split(',')[0]).toLocaleDateString('en-GB') : 'N/A');
+    drawRow('Event Date', ticketDate, gridY + 25);
     drawRow('Package Type', ticket.package_name, gridY + 50);
     drawRow('Entry Status', 'Single Entry • Non-Transferable', gridY + 75);
 

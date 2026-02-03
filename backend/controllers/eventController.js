@@ -3,6 +3,19 @@ const db = require('../config/db');
 const createEvent = async (req, res) => {
     let { title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, category_name, packages, schedule } = req.body;
     const organizer_id = req.user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(start_date);
+    const end = new Date(end_date);
+
+    if (start < today) {
+        return res.status(400).json({ message: 'Event start date cannot be in the past.' });
+    }
+
+    if (end < start) {
+        return res.status(400).json({ message: 'Event end date cannot be earlier than start date.' });
+    }
 
     try {
         // Handle JSON parsing for Multipart fields if they are strings
@@ -301,7 +314,11 @@ const getEventAnalytics = async (req, res) => {
              (SELECT string_agg(p.package_name || ' (x' || bi.qty || ')', ', ') 
               FROM booking_items bi 
               JOIN event_packages p ON bi.package_id = p.id 
-              WHERE bi.booking_id = b.id) as package_summary
+              WHERE bi.booking_id = b.id) as package_summary,
+             (SELECT json_agg(json_build_object('package_name', p.package_name, 'qty', bi.qty, 'event_date', bi.event_date))
+              FROM booking_items bi
+              JOIN event_packages p ON bi.package_id = p.id
+              WHERE bi.booking_id = b.id) as details
              FROM bookings b
              JOIN users u ON b.client_id = u.id
              WHERE b.event_id = $1

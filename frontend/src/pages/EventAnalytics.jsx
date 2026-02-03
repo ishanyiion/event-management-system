@@ -239,19 +239,36 @@ const EventAnalytics = () => {
 
                             <div className="space-y-3">
                                 <h5 className="text-sm font-black text-slate-400 uppercase tracking-widest">Reserved Tickets</h5>
-                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-                                    {(selectedBooking.package_summary || '').split(',').map((pkg, i) => {
-                                        if (!pkg.trim()) return null;
-                                        const parts = pkg.trim().split(' (x');
-                                        const name = parts[0];
-                                        const qty = parts[1] ? parts[1].replace(')', '') : '1';
-                                        return (
-                                            <div key={i} className="flex justify-between items-center font-bold text-slate-700">
-                                                <span>{name}</span>
-                                                <span className="text-primary-600">x{qty}</span>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    {selectedBooking.details && selectedBooking.details.length > 0 ? (
+                                        selectedBooking.details.map((detail, i) => (
+                                            <div key={i} className="flex flex-col gap-1 pb-3 last:pb-0 border-b last:border-0 border-slate-200/50">
+                                                <div className="flex justify-between items-center font-bold text-slate-700">
+                                                    <span>{detail.package_name}</span>
+                                                    <span className="text-primary-600">x{detail.qty}</span>
+                                                </div>
+                                                {detail.event_date && (
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                                                        <Calendar className="w-3 h-3" />
+                                                        {new Date(detail.event_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                )}
                                             </div>
-                                        );
-                                    })}
+                                        ))
+                                    ) : (
+                                        (selectedBooking.package_summary || '').split(',').map((pkg, i) => {
+                                            if (!pkg.trim()) return null;
+                                            const parts = pkg.trim().split(' (x');
+                                            const name = parts[0];
+                                            const qty = parts[1] ? parts[1].replace(')', '') : '1';
+                                            return (
+                                                <div key={i} className="flex justify-between items-center font-bold text-slate-700">
+                                                    <span>{name}</span>
+                                                    <span className="text-primary-600">x{qty}</span>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
 

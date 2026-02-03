@@ -64,4 +64,39 @@ const getApprovedEvents = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents, getApprovedEvents };
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await db.query('SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC');
+        res.json(users.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const toggleUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // ACTIVE or BLOCKED
+
+        if (parseInt(id) === req.user.id) {
+            return res.status(400).json({ message: 'You cannot block your own account' });
+        }
+
+        const updatedUser = await db.query(
+            'UPDATE users SET status = $1 WHERE id = $2 RETURNING id, name, email, role, status',
+            [status, id]
+        );
+
+        if (updatedUser.rowCount === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(updatedUser.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents, getApprovedEvents, getAllUsers, toggleUserStatus };

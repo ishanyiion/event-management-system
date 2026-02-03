@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Smartphone, ArrowRight, ShieldCheck, AlertCircle, Calendar, User, Mail, Banknote } from 'lucide-react';
 import api from '../../utils/api';
+import { showSuccess, showError } from '../../utils/swalHelper';
 
 const ConfirmPayment = () => {
     const { bookingId } = useParams();
@@ -46,10 +47,12 @@ const ConfirmPayment = () => {
                 user_name: userName,
                 user_email: userEmail
             });
-            alert('Payment confirmed successfully! A receipt has been sent to your email.');
+            await showSuccess('Payment Confirmed!', 'Verification successful. A receipt has been sent to your email.');
             navigate(`/booking/view/${bookingId}`);
         } catch (err) {
-            setError(err.response?.data?.message || 'Verification failed. Try again.');
+            const msg = err.response?.data?.message || 'Verification failed. Try again.';
+            setError(msg);
+            showError('Payment Error', msg);
         } finally {
             setLoading(false);
         }
