@@ -11,10 +11,17 @@ const createEvent = async (req, res) => {
 
         // Validate Package Capacities
         if (packages && packages.length > 0) {
-            const totalPackageCapacity = packages.reduce((sum, pkg) => sum + parseInt(pkg.capacity || 0), 0);
-            if (totalPackageCapacity > parseInt(max_capacity)) {
-                return res.status(400).json({ message: `Total package capacity (${totalPackageCapacity}) cannot exceed event capacity (${max_capacity})` });
+            const hasZeroCapacity = packages.some(pkg => parseInt(pkg.capacity || 0) <= 0);
+            if (hasZeroCapacity) {
+                return res.status(400).json({ message: 'Each package must have at least 1 ticket.' });
             }
+
+            const totalPackageCapacity = packages.reduce((sum, pkg) => sum + parseInt(pkg.capacity || 0), 0);
+            if (totalPackageCapacity !== parseInt(max_capacity)) {
+                return res.status(400).json({ message: `Total package capacity (${totalPackageCapacity}) must exactly match the event capacity (${max_capacity}).` });
+            }
+        } else {
+            return res.status(400).json({ message: 'At least one event package is required.' });
         }
 
         // Check if organizer is verified
@@ -130,18 +137,43 @@ const getEventById = async (req, res) => {
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        const packages = await db.query(
+        const packagesQuery = await db.query(
             `SELECT p.*, 
-             COALESCE((SELECT SUM(bi.qty) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as sold_qty
+             COALESCE((SELECT SUM(bi.qty) FROM booking_items bi JOIN bookings b ON bi.booking_id = b.id WHERE bi.package_id = p.id AND b.booking_status = 'CONFIRMED'), 0) as total_sold
              FROM event_packages p WHERE p.event_id = $1`,
             [req.params.id]
         );
+
+        const packages = packagesQuery.rows;
+
+        // Fetch daily sold stats
+        for (let pkg of packages) {
+            const dailyRes = await db.query(
+                `SELECT event_date, SUM(bi.qty) as sold
+                 FROM booking_items bi
+                 JOIN bookings b ON bi.booking_id = b.id
+                 WHERE bi.package_id = $1 AND b.booking_status = 'CONFIRMED'
+                 GROUP BY event_date`,
+                [pkg.id]
+            );
+
+            const dailyMap = {};
+            dailyRes.rows.forEach(r => {
+                if (r.event_date) {
+                    const dateKey = r.event_date.split('T')[0];
+                    dailyMap[dateKey] = parseInt(r.sold || 0);
+                }
+            });
+            pkg.daily_sold = dailyMap;
+            pkg.sold_qty = pkg.total_sold; // keep for backward compatibility
+        }
+
         const schedule = await db.query('SELECT * FROM event_schedules WHERE event_id = $1 ORDER BY event_date ASC', [req.params.id]);
 
         res.json({
             ...event.rows[0],
             images: typeof event.rows[0].images === 'string' ? JSON.parse(event.rows[0].images) : (event.rows[0].images || []),
-            packages: packages.rows,
+            packages,
             schedule: schedule.rows
         });
     } catch (err) {

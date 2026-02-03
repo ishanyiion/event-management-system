@@ -1,20 +1,13 @@
-const { query } = require('./config/db');
-
-async function checkColumns() {
+const { Pool } = require('pg');
+const pool = new Pool({ connectionString: 'postgres://postgres:postgres@localhost:5432/event_management' });
+async function check() {
     try {
-        console.log('Checking columns for table events:');
-        const eventsResult = await query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'events'");
-        eventsResult.rows.forEach(row => console.log(`- ${row.column_name}: ${row.data_type}`));
-
-        console.log('\nChecking columns for table event_packages:');
-        const packagesResult = await query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'event_packages'");
-        packagesResult.rows.forEach(row => console.log(`- ${row.column_name}: ${row.data_type}`));
-
+        const res = await pool.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'booking_items';");
+        console.log(JSON.stringify(res.rows, null, 2));
     } catch (err) {
-        console.error('Error checking columns:', err);
+        console.error(err);
     } finally {
-        process.exit();
+        await pool.end();
     }
 }
-
-checkColumns();
+check();

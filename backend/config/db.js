@@ -1,5 +1,9 @@
-const { Pool } = require('pg');
+const pg = require('pg');
+const { Pool } = pg;
 const dotenv = require('dotenv');
+
+// Force DATE types to be returned as strings to avoid timezone shifts
+pg.types.setTypeParser(1082, (val) => val);
 
 dotenv.config({ override: true });
 

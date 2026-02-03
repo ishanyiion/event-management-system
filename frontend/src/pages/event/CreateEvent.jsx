@@ -151,9 +151,15 @@ const CreateEvent = () => {
             return;
         }
 
+        const hasZeroCapacity = packages.some(pkg => parseInt(pkg.capacity || 0) <= 0);
+        if (hasZeroCapacity) {
+            setError('Each package must have at least 1 ticket.');
+            return;
+        }
+
         const totalPackageCapacity = packages.reduce((sum, pkg) => sum + parseInt(pkg.capacity || 0), 0);
-        if (totalPackageCapacity > parseInt(formData.max_capacity)) {
-            setError(`Total package capacity (${totalPackageCapacity}) cannot exceed event capacity (${formData.max_capacity})`);
+        if (totalPackageCapacity !== parseInt(formData.max_capacity)) {
+            setError(`Total package capacity (${totalPackageCapacity}) must exactly match the event capacity (${formData.max_capacity})`);
             return;
         }
 

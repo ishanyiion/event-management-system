@@ -360,8 +360,8 @@ const cancelBooking = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to cancel this booking' });
         }
 
-        if (booking.rows[0].booking_status !== 'PENDING') {
-            return res.status(400).json({ message: 'Only pending bookings can be cancelled' });
+        if (booking.rows[0].booking_status !== 'PENDING' && booking.rows[0].payment_status !== 'UNPAID') {
+            return res.status(400).json({ message: 'Only pending or unpaid bookings can be removed' });
         }
 
         await db.query('DELETE FROM bookings WHERE id = $1', [id]);

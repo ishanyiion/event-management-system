@@ -6,6 +6,14 @@ import { useAuth } from '../context/AuthContext';
 import { getEventImage, formatEventImage } from '../utils/eventImages';
 import { formatTimeAMPM } from '../utils/formatTime';
 
+const formatDateSafe = (dateStr, options = { day: '2-digit', month: '2-digit', year: 'numeric' }) => {
+    if (!dateStr || typeof dateStr !== 'string') return dateStr;
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length !== 3) return dateStr;
+    const [y, m, d] = parts.map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-GB', options);
+};
+
 const EventDetails = () => {
     const { id } = useParams();
     const { user } = useAuth();
@@ -215,7 +223,7 @@ const EventDetails = () => {
                         <div className="flex flex-wrap gap-6 text-slate-500 font-medium">
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-primary-500" />
-                                <span>{new Date(event.start_date).toLocaleDateString('en-GB')} to {new Date(event.end_date).toLocaleDateString('en-GB')}</span>
+                                <span>{formatDateSafe(event.start_date)} to {formatDateSafe(event.end_date)}</span>
                             </div>
                             {/* ... existing schedule display code if needed ... */}
                             <div className="flex items-center gap-2">
@@ -266,7 +274,7 @@ const EventDetails = () => {
                                                 }`}
                                         >
                                             <div className="flex flex-col items-center">
-                                                <span>{new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
+                                                <span>{formatDateSafe(dateStr, { day: '2-digit', month: 'short' })}</span>
                                                 {isPast && <span className="text-[8px] uppercase">Passed</span>}
                                             </div>
                                             {hasItems && !isActive && (
@@ -290,10 +298,10 @@ const EventDetails = () => {
                                     const currentDayQty = (cart[activeDate] || {})[pkg.id] || 0;
                                     // Total sold calculation (approximate locally + DB stats)
                                     // ideally we subtract local other-day selections if strictly tracking absolute limit per package
-                                    const soldQty = parseInt(pkg.sold_qty || 0);
+                                    const dailySold = pkg.daily_sold || {};
+                                    const soldQty = parseInt(dailySold[activeDate] || 0);
                                     const capacity = parseInt(pkg.capacity || 0);
-                                    // Simplified availability check (not strictly checking current session's other days to avoid complex state sync, 
-                                    // relying on backend final check)
+
                                     const isSoldOut = capacity > 0 && soldQty >= capacity;
                                     const remaining = Math.max(0, capacity - soldQty);
 

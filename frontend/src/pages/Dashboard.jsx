@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Users, Calendar, Banknote, ShieldCheck, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Users, Calendar, Banknote, ShieldCheck, Clock, CheckCircle, XCircle, Trash } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { getEventImage, formatEventImage } from '../utils/eventImages';
@@ -41,6 +41,16 @@ const Dashboard = () => {
 
     const handleImageError = (e, category, title) => {
         e.target.src = getEventImage(category, title);
+    };
+
+    const handleRemoveBooking = async (id) => {
+        if (!window.confirm('Are you sure you want to remove this booking request?')) return;
+        try {
+            await api.delete(`/bookings/${id}`);
+            setItems(items.filter(item => item.id !== id));
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to remove booking');
+        }
     };
 
     const isExpired = (dateStr) => {
@@ -186,7 +196,7 @@ const Dashboard = () => {
                                             </h3>
                                             <div className="space-y-4">
                                                 {unpaidBookings.map((item) => (
-                                                    <BookingCard key={item.id} item={item} navigate={navigate} />
+                                                    <BookingCard key={item.id} item={item} navigate={navigate} onRemove={() => handleRemoveBooking(item.id)} />
                                                 ))}
                                             </div>
                                         </div>
@@ -271,7 +281,7 @@ const Dashboard = () => {
     );
 };
 
-const BookingCard = ({ item, navigate, expired }) => {
+const BookingCard = ({ item, navigate, expired, onRemove }) => {
     const handleImageError = (e, category, title) => {
         e.target.src = getEventImage(category, title);
     };
@@ -307,7 +317,21 @@ const BookingCard = ({ item, navigate, expired }) => {
                     </p>
                 </div>
             </div>
-            <StatusBadge status={expired ? 'ENDED' : (item.payment_status === 'UNPAID' ? 'UNPAID' : (item.status || item.booking_status))} />
+            <div className="flex items-center gap-4">
+                {onRemove && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onRemove();
+                        }}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Remove Request"
+                    >
+                        <Trash className="w-5 h-5" />
+                    </button>
+                )}
+                <StatusBadge status={expired ? 'ENDED' : (item.payment_status === 'UNPAID' ? 'UNPAID' : (item.status || item.booking_status))} />
+            </div>
         </Link>
     );
 };
