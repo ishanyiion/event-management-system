@@ -349,51 +349,50 @@ const Dashboard = () => {
                                                         <p className="text-sm text-slate-500">By: {item.organizer_name}</p>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={async () => {
-                                                        const result = await showConfirm('Approve Event?', `Are you sure you want to approve "${item.title}"?`);
-                                                        if (result.isConfirmed) {
-                                                            try {
-                                                                await api.put(`/events/approve/${item.id}`);
-                                                                const p = await api.get('/admin/events/pending');
-                                                                const a = await api.get('/admin/events/approved');
-                                                                setItems({ pending: p.data, approved: a.data });
-                                                                showSuccess('Approved', 'Event has been approved.');
-                                                            } catch (err) {
-                                                                showError('Error', err.response?.data?.message || 'Failed to approve');
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="px-6 py-2 text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl border border-green-100"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
-                                                        if (result.isConfirmed) {
-                                                            try {
-                                                                await api.delete(`/events/${item.id}`);
-                                                                const p = await api.get('/admin/events/pending');
-                                                                // approved list might not change but let's refresh just in case or just update local state
-                                                                if (items.pending) {
-                                                                    setItems(prev => ({ ...prev, pending: prev.pending.filter(e => e.id !== item.id) }));
-                                                                } else {
-                                                                    // Fallback if full refresh is better
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const result = await showConfirm('Approve Event?', `Are you sure you want to approve "${item.title}"?`);
+                                                            if (result.isConfirmed) {
+                                                                try {
+                                                                    await api.put(`/events/approve/${item.id}`);
+                                                                    const p = await api.get('/admin/events/pending');
                                                                     const a = await api.get('/admin/events/approved');
                                                                     setItems({ pending: p.data, approved: a.data });
+                                                                    showSuccess('Approved', 'Event has been approved.');
+                                                                } catch (err) {
+                                                                    showError('Error', err.response?.data?.message || 'Failed to approve');
                                                                 }
-
-                                                                showSuccess('Deleted', 'Event has been deleted successfully.');
-                                                            } catch (err) {
-                                                                showError('Error', err.response?.data?.message || 'Failed to delete');
                                                             }
-                                                        }
-                                                    }}
-                                                    className="px-4 py-2 ml-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100"
-                                                >
-                                                    <Trash className="w-5 h-5" />
-                                                </button>
+                                                        }}
+                                                        className="px-6 py-2 text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl border border-green-100 transition-colors"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            const result = await showConfirm('Reject Event?', `Are you sure you want to reject "${item.title}"? This action cannot be undone.`);
+                                                            if (result.isConfirmed) {
+                                                                try {
+                                                                    await api.delete(`/events/${item.id}`);
+                                                                    const p = await api.get('/admin/events/pending');
+                                                                    if (items.pending) {
+                                                                        setItems(prev => ({ ...prev, pending: prev.pending.filter(e => e.id !== item.id) }));
+                                                                    } else {
+                                                                        const a = await api.get('/admin/events/approved');
+                                                                        setItems({ pending: p.data, approved: a.data });
+                                                                    }
+                                                                    showSuccess('Rejected', 'Event has been rejected correctly.');
+                                                                } catch (err) {
+                                                                    showError('Error', err.response?.data?.message || 'Failed to reject');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="px-6 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 transition-colors"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                         {pendingApprovals.length === 0 && (
