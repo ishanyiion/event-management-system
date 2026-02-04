@@ -79,7 +79,7 @@ const ConfirmPayment = () => {
                                 <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center border-4 border-slate-900 overflow-hidden">
                                     <img
                                         src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
-                                            `upi://pay?pa=demo@upi&pn=EventHub&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`
+                                            `upi://pay?pa=${booking.organizer_upi_id}&pn=${encodeURIComponent(booking.organizer_name)}&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`
                                         )}`}
                                         alt="UPI QR Code"
                                         className="w-full h-full p-2"
@@ -89,7 +89,7 @@ const ConfirmPayment = () => {
 
                             {/* Mobile Deep Link Button */}
                             <a
-                                href={`upi://pay?pa=demo@upi&pn=EventHub&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`}
+                                href={`upi://pay?pa=${booking.organizer_upi_id}&pn=${encodeURIComponent(booking.organizer_name)}&am=${booking.total_amount}&tn=${encodeURIComponent(`Payment for ${booking.event_title}`)}&tr=${bookingId}&cu=INR`}
                                 className="w-full flex md:hidden items-center justify-center gap-3 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg active:scale-95"
                             >
                                 <Smartphone className="w-5 h-5 text-primary-400" />
@@ -97,7 +97,7 @@ const ConfirmPayment = () => {
                             </a>
 
                             <div className="text-center space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Payee: EventHub</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Payee: {booking.organizer_name}</p>
                                 <p className="text-2xl font-black text-primary-600 tracking-tighter">₹{booking.total_amount}</p>
                             </div>
                         </div>

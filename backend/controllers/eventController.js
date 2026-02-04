@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 const createEvent = async (req, res) => {
-    let { title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, category_name, packages, schedule } = req.body;
+    let { title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, category_name, packages, schedule, upi_id } = req.body;
     const organizer_id = req.user.id;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -37,6 +37,10 @@ const createEvent = async (req, res) => {
             return res.status(400).json({ message: 'At least one event package is required.' });
         }
 
+        if (!upi_id) {
+            return res.status(400).json({ message: 'UPI ID is compulsory for automated payments.' });
+        }
+
         // Check if organizer is verified
         const user = await db.query('SELECT status FROM users WHERE id = $1', [organizer_id]);
         if (user.rows[0].status !== 'ACTIVE') {
@@ -64,8 +68,8 @@ const createEvent = async (req, res) => {
         }
 
         const newEvent = await db.query(
-            'INSERT INTO events (organizer_id, category_id, title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, banner_url, images) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
-            [organizer_id, finalCategoryId, title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, banner_url, JSON.stringify(images)]
+            'INSERT INTO events (organizer_id, category_id, title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, banner_url, images, upi_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
+            [organizer_id, finalCategoryId, title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, banner_url, JSON.stringify(images), upi_id]
         );
 
         const eventId = newEvent.rows[0].id;

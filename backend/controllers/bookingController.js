@@ -268,7 +268,7 @@ const confirmPayment = async (req, res) => {
     try {
         await db.query('BEGIN');
         const bookingRes = await db.query(
-            'SELECT b.*, e.title as event_title, u.name as user_name, u.email as user_email FROM bookings b JOIN events e ON b.event_id = e.id JOIN users u ON b.client_id = u.id WHERE b.id = $1',
+            'SELECT b.*, e.title as event_title, e.upi_id as organizer_upi_id, u.name as user_name, u.email as user_email, org.name as organizer_name FROM bookings b JOIN events e ON b.event_id = e.id JOIN users u ON b.client_id = u.id JOIN users org ON e.organizer_id = org.id WHERE b.id = $1',
             [booking_id]
         );
         if (bookingRes.rows.length === 0) {
@@ -382,7 +382,7 @@ const getBookingById = async (req, res) => {
     try {
         const { id } = req.params;
         const bookingRes = await db.query(
-            'SELECT b.*, e.title as event_title, u.name as user_name, u.email as user_email FROM bookings b JOIN events e ON b.event_id = e.id JOIN users u ON b.client_id = u.id WHERE b.id = $1',
+            'SELECT b.*, e.title as event_title, e.upi_id as organizer_upi_id, u.name as user_name, u.email as user_email, org.name as organizer_name FROM bookings b JOIN events e ON b.event_id = e.id JOIN users u ON b.client_id = u.id JOIN users org ON e.organizer_id = org.id WHERE b.id = $1',
             [id]
         );
 

@@ -63,6 +63,7 @@ const CreateEvent = () => {
         end_date: '',
         max_capacity: 100,
         category_name: '',
+        upi_id: '',
     });
     const [schedule, setSchedule] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -275,6 +276,19 @@ const CreateEvent = () => {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     required
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Your UPI ID (For Direct Payment)</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="e.g., yourname@okaxis or 9876543210@upi"
+                                    value={formData.upi_id}
+                                    onChange={(e) => setFormData({ ...formData, upi_id: e.target.value })}
+                                    required
+                                />
+                                <p className="text-[10px] text-slate-500 italic">Payments from clients will be sent directly to this ID via QR code.</p>
                             </div>
                         </div>
                     </div>

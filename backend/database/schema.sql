@@ -39,6 +39,7 @@ CREATE TABLE events (
     status event_status DEFAULT 'PENDING',
     banner_url VARCHAR(255),
     images TEXT,
+    upi_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
