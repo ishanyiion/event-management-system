@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import { getEventImage, formatEventImage } from '../../utils/eventImages';
 import { formatTimeAMPM } from '../../utils/formatTime';
+import { showConfirm, showSuccess, showError } from '../../utils/swalHelper';
 
 const EventGrid = () => {
     const { user } = useAuth();
@@ -138,6 +139,27 @@ const EventGrid = () => {
                                             </div>
                                         )}
                                     </div>
+                                    {user && user.role === 'ADMIN' && (
+                                        <button
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${event.title}"?`);
+                                                if (result.isConfirmed) {
+                                                    try {
+                                                        await api.delete(`/events/${event.id}`);
+                                                        setEvents(events.filter(e => e.id !== event.id));
+                                                        showSuccess('Deleted', 'Event deleted.');
+                                                    } catch (err) {
+                                                        showError('Error', 'Failed to delete');
+                                                    }
+                                                }
+                                            }}
+                                            className="absolute top-4 right-4 bg-white/90 p-2 rounded-full text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-sm"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="p-6 space-y-4">
                                     <div>

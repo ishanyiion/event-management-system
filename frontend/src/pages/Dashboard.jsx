@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash } from 'lucide-react';
+import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash, BadgeCheck, Eye } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { getEventImage, formatEventImage } from '../utils/eventImages';
@@ -120,7 +120,10 @@ const Dashboard = () => {
         <div className="space-y-10">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 capitalize">{user.role.toLowerCase()} Dashboard</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl font-bold text-slate-900 capitalize">{user.role.toLowerCase()} Dashboard</h1>
+                        {user.role === 'ADMIN' && <BadgeCheck className="w-8 h-8 text-blue-500 fill-blue-50" />}
+                    </div>
                     <p className="text-slate-500">Welcome back, {user.name}!</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -182,7 +185,7 @@ const Dashboard = () => {
                                         <Users className="w-5 h-5 text-primary-500" /> Platform Organizers
                                     </h3>
                                     <div className="card bg-white shadow-sm overflow-hidden border-none">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="bg-slate-50 border-b border-slate-100">
@@ -203,7 +206,13 @@ const Dashboard = () => {
                                                             <td className="px-6 py-4">
                                                                 <StatusBadge status={u.status} />
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
+                                                            <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                                                                <Link
+                                                                    to={`/admin/user/${u.id}`}
+                                                                    className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <Eye className="w-4 h-4" /> View
+                                                                </Link>
                                                                 {u.id !== user.id && (
                                                                     <button
                                                                         onClick={() => handleToggleUserStatus(u.id, u.status)}
@@ -234,7 +243,7 @@ const Dashboard = () => {
                                         <Users className="w-5 h-5 text-slate-400" /> Platform Clients
                                     </h3>
                                     <div className="card bg-white shadow-sm overflow-hidden border-none text-left">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
                                             <table className="w-full text-left">
                                                 <thead>
                                                     <tr className="bg-slate-50 border-b border-slate-100">
@@ -255,7 +264,13 @@ const Dashboard = () => {
                                                             <td className="px-6 py-4">
                                                                 <StatusBadge status={u.status} />
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
+                                                            <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                                                                <Link
+                                                                    to={`/admin/user/${u.id}`}
+                                                                    className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <Eye className="w-4 h-4" /> View
+                                                                </Link>
                                                                 {u.id !== user.id && (
                                                                     <button
                                                                         onClick={() => handleToggleUserStatus(u.id, u.status)}
@@ -353,6 +368,32 @@ const Dashboard = () => {
                                                 >
                                                     Approve
                                                 </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                        if (result.isConfirmed) {
+                                                            try {
+                                                                await api.delete(`/events/${item.id}`);
+                                                                const p = await api.get('/admin/events/pending');
+                                                                // approved list might not change but let's refresh just in case or just update local state
+                                                                if (items.pending) {
+                                                                    setItems(prev => ({ ...prev, pending: prev.pending.filter(e => e.id !== item.id) }));
+                                                                } else {
+                                                                    // Fallback if full refresh is better
+                                                                    const a = await api.get('/admin/events/approved');
+                                                                    setItems({ pending: p.data, approved: a.data });
+                                                                }
+
+                                                                showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                            } catch (err) {
+                                                                showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 ml-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100"
+                                                >
+                                                    <Trash className="w-5 h-5" />
+                                                </button>
                                             </div>
                                         ))}
                                         {pendingApprovals.length === 0 && (
@@ -394,6 +435,28 @@ const Dashboard = () => {
                                                             View Stats
                                                         </div>
                                                         <StatusBadge status="APPROVED" />
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.preventDefault(); // Prevent navigation
+                                                                const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                                if (result.isConfirmed) {
+                                                                    try {
+                                                                        await api.delete(`/events/${item.id}`);
+                                                                        setItems(prev => ({
+                                                                            ...prev,
+                                                                            approved: prev.approved.filter(e => e.id !== item.id)
+                                                                        }));
+                                                                        showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                                    } catch (err) {
+                                                                        showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                            title="Delete Event"
+                                                        >
+                                                            <Trash className="w-5 h-5" />
+                                                        </button>
                                                     </div>
                                                 </Link>
                                             ))

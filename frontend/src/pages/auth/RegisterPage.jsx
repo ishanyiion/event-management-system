@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Briefcase, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Briefcase, ArrowRight, Eye, EyeOff, Phone } from 'lucide-react';
 import api from '../../utils/api';
 
 const RegisterPage = () => {
@@ -19,6 +19,7 @@ const RegisterPage = () => {
         name: '',
         email: '',
         password: '',
+        mobile: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -96,6 +97,21 @@ const RegisterPage = () => {
                                 className="input pl-10"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700">Mobile Number</label>
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                            <input
+                                type="tel"
+                                placeholder="+91 9876543210"
+                                className="input pl-10"
+                                value={formData.mobile}
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                                 required
                             />
                         </div>

@@ -46,10 +46,10 @@ const Navbar = () => {
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-slate-900 font-semibold bg-slate-100 px-3 py-1.5 rounded-full">
+                            <Link to="/profile" className="flex items-center gap-2 text-slate-900 font-semibold bg-slate-100 px-3 py-1.5 rounded-full hover:bg-slate-200 transition-colors">
                                 <User className="w-4 h-4 text-primary-600" />
                                 <span>{user.name}</span>
-                            </div>
+                            </Link>
                             <button
                                 onClick={handleLogout}
                                 className="text-slate-500 hover:text-red-500 transition-colors p-2"

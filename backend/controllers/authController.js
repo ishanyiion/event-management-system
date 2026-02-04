@@ -18,8 +18,8 @@ const register = async (req, res) => {
 
         // Create user
         const newUser = await db.query(
-            'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-            [name, email, hashedPassword, role || 'CLIENT']
+            'INSERT INTO users (name, email, password_hash, role, mobile) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, mobile',
+            [name, email, hashedPassword, role || 'CLIENT', req.body.mobile]
         );
 
         res.status(201).json(newUser.rows[0]);
@@ -73,7 +73,7 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
     try {
         const userResult = await db.query(
-            'SELECT id, name, email, role, status FROM users WHERE id = $1',
+            'SELECT id, name, email, role, status, mobile FROM users WHERE id = $1',
             [req.user.id]
         );
         if (userResult.rows.length === 0) {
@@ -92,4 +92,109 @@ const getMe = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getMe };
+const updateProfile = async (req, res) => {
+    try {
+        const { name, mobile } = req.body;
+        const userId = req.user.id;
+
+        const result = await db.query(
+            'UPDATE users SET name = $1, mobile = $2 WHERE id = $3 RETURNING id, name, email, role, mobile',
+            [name, mobile, userId]
+        );
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        // Get user for password check
+        const userRes = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, userRes.rows[0].password_hash);
+        if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const sendOtp = async (req, res) => {
+    try {
+        const { mobile } = req.body;
+        // Check if user exists
+        const userRes = await db.query('SELECT * FROM users WHERE mobile = $1', [mobile]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: 'User with this mobile number not found' });
+        }
+
+        // Generate 6 digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = new Date(Date.now() + 10 * 60000); // 10 minutes
+
+        // Save to DB
+        await db.query('UPDATE users SET otp = $1, otp_expires = $2 WHERE mobile = $3', [otp, expires, mobile]);
+
+        // Log to console (Simulation)
+        console.log(`=========================================`);
+        console.log(`OTP for ${mobile}: ${otp}`);
+        console.log(`=========================================`);
+
+        res.json({ message: 'OTP sent successfully to your mobile number' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const resetPasswordWithOtp = async (req, res) => {
+    try {
+        const { mobile, otp, newPassword } = req.body;
+
+        const userRes = await db.query('SELECT * FROM users WHERE mobile = $1', [mobile]);
+        if (userRes.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+        const user = userRes.rows[0];
+
+        // Verify OTP
+        if (user.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        if (new Date() > new Date(user.otp_expires)) {
+            return res.status(400).json({ message: 'OTP expired' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password and clear OTP
+        await db.query(
+            'UPDATE users SET password_hash = $1, otp = NULL, otp_expires = NULL WHERE id = $2',
+            [hashedPassword, user.id]
+        );
+
+        res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { register, login, getMe, updateProfile, changePassword, sendOtp, resetPasswordWithOtp };

@@ -99,4 +99,50 @@ const toggleUserStatus = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents, getApprovedEvents, getAllUsers, toggleUserStatus };
+const getUserDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userResult = await db.query('SELECT id, name, email, role, status, mobile, created_at FROM users WHERE id = $1', [id]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(userResult.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getUserEvents = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const events = await db.query('SELECT * FROM events WHERE organizer_id = $1 ORDER BY created_at DESC', [id]);
+        res.json(events.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+const getUserBookings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const bookings = await db.query(
+            `SELECT b.*, e.title as event_title, e.banner_url, c.name as category_name 
+             FROM bookings b 
+             JOIN events e ON b.event_id = e.id 
+             LEFT JOIN categories c ON e.category_id = c.id 
+             WHERE b.client_id = $1 
+             ORDER BY b.created_at DESC`,
+            [id]
+        );
+        res.json(bookings.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getDashboardStats, getPendingOrganizers, verifyOrganizer, getPendingEvents, getApprovedEvents, getAllUsers, toggleUserStatus, getUserDetails, getUserEvents, getUserBookings };
