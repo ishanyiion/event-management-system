@@ -8,6 +8,7 @@ const getDashboardStats = async (req, res) => {
         const pendingEvents = await db.query('SELECT COUNT(*) FROM events WHERE status = \'PENDING\'');
         const totalRevenue = await db.query('SELECT SUM(amount) FROM payments WHERE status = \'SUCCESS\'');
         const totalBookings = await db.query('SELECT COUNT(*) FROM bookings');
+        const editRequests = await db.query("SELECT COUNT(*) FROM events WHERE edit_permission = 'REQUESTED'");
 
         res.json({
             totalUsers: parseInt(totalUsers.rows[0].count),
@@ -15,7 +16,8 @@ const getDashboardStats = async (req, res) => {
             totalEvents: parseInt(totalEvents.rows[0].count),
             pendingEvents: parseInt(pendingEvents.rows[0].count),
             totalRevenue: parseFloat(totalRevenue.rows[0].sum || 0),
-            totalBookings: parseInt(totalBookings.rows[0].count)
+            totalBookings: parseInt(totalBookings.rows[0].count),
+            editRequestsCount: parseInt(editRequests.rows[0].count)
         });
     } catch (err) {
         console.error(err);

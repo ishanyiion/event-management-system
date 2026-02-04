@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, MapPin, Plus, Trash, ArrowRight, Info, Search, Clock, X, Upload, Tag, Trash2, IndianRupee, Image as ImageIcon, AlertCircle, Save, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import api from '../../utils/api';
 import { showError, showSuccess } from '../../utils/swalHelper';
@@ -54,6 +54,8 @@ const TimeInput12h = ({ value, onChange, className = "" }) => {
 
 const CreateEvent = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -86,6 +88,59 @@ const CreateEvent = () => {
         };
         fetchCats();
     }, []);
+
+    useEffect(() => {
+        const fetchEvent = async () => {
+            if (!id) return;
+            try {
+                const res = await api.get(`/events/${id}`);
+                const event = res.data;
+                setFormData({
+                    title: event.title,
+                    description: event.description,
+                    location: event.location,
+                    city: event.city,
+                    start_date: event.start_date.split('T')[0],
+                    end_date: event.end_date.split('T')[0],
+                    max_capacity: event.max_capacity,
+                    category_name: event.category_name,
+                    upi_id: event.upi_id || '',
+                });
+
+                // Fetch packages and schedule from existing data
+                // Note: The /events/:id endpoint might need to return these.
+                // If not, we might need a specific edit-fetch endpoint or update the main one.
+                // Fetch packages and schedule from existing data with correct mapping
+                if (event.packages) {
+                    setPackages(event.packages.map(p => ({
+                        name: p.package_name,
+                        price: p.price,
+                        features: p.features,
+                        capacity: p.capacity
+                    })));
+                }
+                if (event.schedule) {
+                    setSchedule(event.schedule.map(s => ({
+                        date: s.event_date.split('T')[0],
+                        startTime: s.start_time.slice(0, 5),
+                        endTime: s.end_time.slice(0, 5),
+                        capacity: s.capacity
+                    })));
+                }
+
+                // Handle Previews for existing images
+                if (event.images) {
+                    const imgArray = typeof event.images === 'string' ? JSON.parse(event.images) : event.images;
+                    setPreviews(imgArray.map(img => img.startsWith('http') ? img : `http://localhost:5000${img}`));
+                }
+
+            } catch (err) {
+                console.error('Failed to fetch event data', err);
+                showError('Error', 'Failed to load event data for editing');
+            }
+        };
+        fetchEvent();
+    }, [id]);
 
     useEffect(() => {
         if (formData.start_date && formData.end_date) {
@@ -148,7 +203,7 @@ const CreateEvent = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (selectedFiles.length === 0) {
+        if (!isEdit && selectedFiles.length === 0) {
             setError('At least one event image is compulsory.');
             return;
         }
@@ -191,11 +246,17 @@ const CreateEvent = () => {
                 formDataToSend.append('images', file);
             });
 
-            await api.post('/events/create', formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            await showSuccess('Event Created!', 'Your event has been submitted and is pending approval.');
+            if (isEdit) {
+                await api.put(`/events/update/${id}`, formDataToSend, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                await showSuccess('Event Updated!', 'Your changes have been submitted and are pending approval.');
+            } else {
+                await api.post('/events/create', formDataToSend, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                await showSuccess('Event Created!', 'Your event has been submitted and is pending approval.');
+            }
             navigate('/dashboard');
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to create event';
@@ -209,7 +270,7 @@ const CreateEvent = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-slate-900">Create New Event</h1>
+                <h1 className="text-3xl font-bold text-slate-900">{isEdit ? 'Edit Event' : 'Create New Event'}</h1>
                 <p className="text-slate-500">Events are subject to admin approval.</p>
             </div>
 
@@ -532,7 +593,7 @@ const CreateEvent = () => {
                         disabled={loading}
                         className="btn-primary px-12 py-3 text-lg font-bold flex items-center gap-2 group"
                     >
-                        {loading ? 'Submitting...' : 'Submit for Approval'}
+                        {loading ? 'Submitting...' : isEdit ? 'Submit Changes' : 'Submit for Approval'}
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>

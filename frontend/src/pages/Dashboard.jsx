@@ -11,43 +11,59 @@ const Dashboard = () => {
     const { user } = useAuth();
     const [stats, setStats] = useState(null);
     const [items, setItems] = useState([]);
-    const [myBookings, setMyBookings] = useState([]);
+    const [requests, setRequests] = useState([]);
     const [users, setUsers] = useState([]);
+    const [myBookings, setMyBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('MANAGED'); // 'MANAGED' or 'BOOKED'
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
+
+            setLoading(true);
             try {
                 if (user.role === 'ADMIN') {
-                    const s = await api.get('/admin/dashboard');
-                    setStats(s.data);
-                    const p = await api.get('/admin/events/pending');
-                    const a = await api.get('/admin/events/approved');
-                    setItems({ pending: p.data, approved: a.data });
-                    const u = await api.get('/admin/users');
-                    setUsers(u.data);
+                    // Fetch each independently so one failure doesn't block the rest
+                    api.get('/admin/dashboard').then(res => setStats(res.data)).catch(console.error);
+                    api.get('/admin/events/pending').then(res => setItems(prev => ({ ...prev, pending: res.data }))).catch(console.error);
+                    api.get('/admin/events/approved').then(res => setItems(prev => ({ ...prev, approved: res.data }))).catch(console.error);
+                    api.get('/events/edit-requests').then(res => setRequests(res.data)).catch(console.error);
+                    api.get('/admin/users').then(res => setUsers(res.data)).catch(console.error);
                 } else if (user.role === 'ORGANIZER') {
-                    const res = await api.get('/events/my');
-                    setItems(res.data);
+                    api.get('/events/my').then(res => setItems(res.data)).catch(console.error);
                 }
 
-                // Always fetch personal bookings for everyone (including Admin/Organizer)
-                const bookingsRes = await api.get('/bookings/my');
-                setMyBookings(bookingsRes.data);
+                // Always fetch personal bookings
+                api.get('/bookings/my').then(res => {
+                    setMyBookings(res.data);
+                    if (user.role === 'CLIENT') setItems(res.data);
+                }).catch(console.error);
 
-                // For Clients, Managed Events is irrelevant, so stay in items logic for now
-                if (user.role === 'CLIENT') {
-                    setItems(bookingsRes.data);
-                }
             } catch (err) {
-                console.error(err);
+                console.error('Fetch error:', err);
             } finally {
-                setLoading(false);
+                // Approximate loading state - in a real app each would have its own loader
+                setTimeout(() => setLoading(false), 500);
             }
         };
-        if (user) fetchData();
+        fetchData();
     }, [user]);
+
+    // Refresh data when switching to specific views for Admins
+    useEffect(() => {
+        if (user?.role === 'ADMIN') {
+            if (view === 'REQUESTS') {
+                api.get('/events/edit-requests').then(res => setRequests(res.data)).catch(console.error);
+                api.get('/admin/dashboard').then(res => setStats(res.data)).catch(console.error);
+            } else if (view === 'USERS') {
+                api.get('/admin/users').then(res => setUsers(res.data)).catch(console.error);
+            } else if (view === 'MANAGED') {
+                api.get('/admin/events/pending').then(res => setItems(prev => ({ ...prev, pending: res.data }))).catch(console.error);
+                api.get('/admin/events/approved').then(res => setItems(prev => ({ ...prev, approved: res.data }))).catch(console.error);
+            }
+        }
+    }, [view, user?.role]);
 
     if (loading) return <div>Loading dashboard...</div>;
 
@@ -142,12 +158,20 @@ const Dashboard = () => {
                                 My Bookings
                             </button>
                             {user.role === 'ADMIN' && (
-                                <button
-                                    onClick={() => setView('USERS')}
-                                    className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'USERS' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
-                                >
-                                    Users
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => setView('REQUESTS')}
+                                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'REQUESTS' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        Requests
+                                    </button>
+                                    <button
+                                        onClick={() => setView('USERS')}
+                                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'USERS' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        Users
+                                    </button>
+                                </>
                             )}
                         </div>
                     )}
@@ -157,28 +181,77 @@ const Dashboard = () => {
                         </Link>
                     )}
                 </div>
-            </header>
+            </header >
 
-            {user.role === 'ADMIN' && stats && (
-                <div className="grid md:grid-cols-3 gap-6">
-                    <div onClick={() => setView('USERS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
-                        <StatCard icon={<Users />} label="Total Users" value={stats.totalUsers} color="bg-blue-500" />
+            {
+                user.role === 'ADMIN' && stats && (
+                    <div className="grid md:grid-cols-4 gap-6">
+                        <div onClick={() => setView('USERS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                            <StatCard icon={<Users />} label="Total Users" value={stats.totalUsers} color="bg-blue-500" />
+                        </div>
+                        <div onClick={() => navigate('/events')} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                            <StatCard icon={<Calendar />} label="Total Events" value={stats.totalEvents} color="bg-purple-500" />
+                        </div>
+                        <StatCard icon={<Clock />} label="Pending" value={stats.pendingEvents} color="bg-amber-500" />
+                        <div onClick={() => setView('REQUESTS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                            <StatCard icon={<Plus />} label="Edit Req." value={stats.editRequestsCount || requests.length} color="bg-indigo-500" />
+                        </div>
                     </div>
-                    <div onClick={() => navigate('/events')} className="cursor-pointer transition-transform hover:scale-[1.02]">
-                        <StatCard icon={<Calendar />} label="Total Events" value={stats.totalEvents} color="bg-purple-500" />
-                    </div>
-                    <StatCard icon={<Clock />} label="Pending" value={stats.pendingEvents} color="bg-amber-500" />
-                </div>
-            )}
+                )
+            }
 
             <div className="space-y-12">
                 <div className="space-y-6">
                     <h3 className="text-xl font-bold text-slate-900 border-l-4 border-primary-500 pl-3">
-                        {view === 'BOOKED' ? 'My Event Passes' : (view === 'USERS' ? 'User Management' : (user.role === 'ADMIN' ? 'Event Management' : user.role === 'ORGANIZER' ? 'My Events' : 'Upcoming Bookings'))}
+                        {view === 'BOOKED' ? 'My Event Passes' :
+                            view === 'USERS' ? 'User Management' :
+                                view === 'REQUESTS' ? 'Event Edit Requests' :
+                                    (user.role === 'ADMIN' ? 'Event Management' : user.role === 'ORGANIZER' ? 'My Events' : 'Upcoming Bookings')}
                     </h3>
 
                     <div className="space-y-4">
-                        {view === 'USERS' ? (
+                        {view === 'REQUESTS' ? (
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    {requests.map((item) => (
+                                        <div key={item.id} className="card p-6 flex items-center justify-between hover:border-slate-300 transition-all shadow-sm">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-400">
+                                                    <Calendar className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900">{item.title}</h4>
+                                                    <p className="text-sm text-slate-500 font-medium">Requested by: <span className="text-indigo-600">@{item.organizer_name}</span></p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={async () => {
+                                                    const result = await showConfirm('Grant Edit Access?', `Allow "${item.organizer_name}" to edit "${item.title}"?`);
+                                                    if (result.isConfirmed) {
+                                                        try {
+                                                            await api.put(`/events/grant-edit/${item.id}`);
+                                                            setRequests(requests.filter(r => r.id !== item.id));
+                                                            showSuccess('Granted', 'Edit access has been granted.');
+                                                        } catch (err) {
+                                                            showError('Error', err.response?.data?.message || 'Failed to grant access');
+                                                        }
+                                                    }
+                                                }}
+                                                className="px-6 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 transition-colors shadow-sm"
+                                            >
+                                                Grant Edit Access
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {requests.length === 0 && (
+                                        <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">
+                                            <p className="text-lg font-medium">All clear!</p>
+                                            <p className="text-sm">There are no pending edit requests at the moment.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : view === 'USERS' ? (
                             <div className="space-y-12">
                                 <div className="space-y-6 text-left">
                                     <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
@@ -415,48 +488,51 @@ const Dashboard = () => {
                                                     to={`/event/analytics/${item.id}`}
                                                     className="card p-6 flex items-center justify-between hover:border-primary-300 hover:shadow-lg transition-all border-2 border-transparent group bg-white shadow-sm"
                                                 >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                                                            <img
-                                                                src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
-                                                                alt=""
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => handleImageError(e, item.category_name, item.title)}
-                                                            />
+                                                    <>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
+                                                                <img
+                                                                    src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => handleImageError(e, item.category_name, item.title)}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
+                                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
-                                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            View Stats
-                                                        </div>
-                                                        <StatusBadge status="APPROVED" />
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.preventDefault(); // Prevent navigation
-                                                                const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
-                                                                if (result.isConfirmed) {
-                                                                    try {
-                                                                        await api.delete(`/events/${item.id}`);
-                                                                        setItems(prev => ({
-                                                                            ...prev,
-                                                                            approved: prev.approved.filter(e => e.id !== item.id)
-                                                                        }));
-                                                                        showSuccess('Deleted', 'Event has been deleted successfully.');
-                                                                    } catch (err) {
-                                                                        showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                View Stats
+                                                            </div>
+                                                            <StatusBadge status="APPROVED" />
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault(); // Prevent navigation
+                                                                    e.stopPropagation(); // Stop bubbling to Link
+                                                                    const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                                    if (result.isConfirmed) {
+                                                                        try {
+                                                                            await api.delete(`/events/${item.id}`);
+                                                                            setItems(prev => ({
+                                                                                ...prev,
+                                                                                approved: prev.approved.filter(e => e.id !== item.id)
+                                                                            }));
+                                                                            showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                                        } catch (err) {
+                                                                            showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                                        }
                                                                     }
-                                                                }
-                                                            }}
-                                                            className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                            title="Delete Event"
-                                                        >
-                                                            <Trash className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
+                                                                }}
+                                                                className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                title="Delete Event"
+                                                            >
+                                                                <Trash className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </>
                                                 </Link>
                                             ))
                                         )}
@@ -474,7 +550,7 @@ const Dashboard = () => {
                                             <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
                                         ) : (
                                             pendingApprovals.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} />
+                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
                                             ))
                                         )}
                                     </div>
@@ -489,7 +565,7 @@ const Dashboard = () => {
                                             <div className="card p-12 text-center text-slate-400 bg-slate-50 border-2 border-transparent">No active events.</div>
                                         ) : (
                                             activeEvents.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} />
+                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
                                             ))
                                         )}
                                     </div>
@@ -502,7 +578,7 @@ const Dashboard = () => {
                                         </h3>
                                         <div className="space-y-4 opacity-75 grayscale-[0.3] hover:grayscale-0 transition-all">
                                             {completedEvents.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} />
+                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
                                             ))}
                                         </div>
                                     </div>
@@ -512,20 +588,22 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {(user.role === 'CLIENT' || view === 'BOOKED') && expiredBookings.length > 0 && (
-                    <div className="space-y-6">
-                        <h3 className="text-xl font-bold text-slate-400 border-l-4 border-slate-300 pl-3">
-                            Recent History
-                        </h3>
-                        <div className="space-y-4 opacity-75 grayscale-[0.5] hover:grayscale-0 transition-all">
-                            {expiredBookings.map((item) => (
-                                <BookingCard key={item.id} item={item} navigate={navigate} expired />
-                            ))}
+                {
+                    (user.role === 'CLIENT' || view === 'BOOKED') && expiredBookings.length > 0 && (
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-bold text-slate-400 border-l-4 border-slate-300 pl-3">
+                                Recent History
+                            </h3>
+                            <div className="space-y-4 opacity-75 grayscale-[0.5] hover:grayscale-0 transition-all">
+                                {expiredBookings.map((item) => (
+                                    <BookingCard key={item.id} item={item} navigate={navigate} expired />
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
             </div>
-        </div >
+        </div>
     );
 };
 
@@ -570,6 +648,7 @@ const BookingCard = ({ item, navigate, expired, onRemove }) => {
                     <button
                         onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             onRemove();
                         }}
                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -616,7 +695,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-const OrganizerEventCard = ({ item, items, setItems }) => {
+const OrganizerEventCard = ({ item, items, setItems, navigate }) => {
     const handleImageError = (e, category, title) => {
         e.target.src = getEventImage(category, title);
     };
@@ -647,9 +726,53 @@ const OrganizerEventCard = ({ item, items, setItems }) => {
                 </div>
                 <div className="flex items-center gap-4">
                     <StatusBadge status={item.status || item.booking_status} />
+                    {item.status === 'APPROVED' && (
+                        <>
+                            {!item.edit_permission ? (
+                                <button
+                                    onClick={async (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const result = await showConfirm('Request Edit?', 'You need Admin permission to edit an approved event. Request now?');
+                                        if (result.isConfirmed) {
+                                            try {
+                                                await api.put(`/events/request-edit/${item.id}`);
+                                                setItems(items.map(i => i.id === item.id ? { ...i, edit_permission: 'REQUESTED' } : i));
+                                                showSuccess('Requested', 'Edit permission has been requested.');
+                                            } catch (err) {
+                                                showError('Request Failed', err.response?.data?.message || 'Failed to request edit');
+                                            }
+                                        }
+                                    }}
+                                    className="px-4 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100"
+                                >
+                                    Request Edit
+                                </button>
+                            ) : item.edit_permission === 'REQUESTED' ? (
+                                <button
+                                    disabled
+                                    className="px-4 py-2 text-xs font-bold text-slate-400 bg-slate-50 rounded-xl border border-slate-100 cursor-not-allowed"
+                                >
+                                    Wait for Approval
+                                </button>
+                            ) : item.edit_permission === 'GRANTED' ? (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        navigate(`/edit-event/${item.id}`);
+                                    }}
+                                    className="px-4 py-2 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100"
+                                >
+                                    Edit Now
+                                </button>
+                            ) : null}
+                        </>
+                    )}
                     <button
                         onClick={async (e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             const result = await showConfirm('Delete Event?', 'Are you sure you want to delete this event? This action cannot be undone.');
                             if (result.isConfirmed) {
                                 try {

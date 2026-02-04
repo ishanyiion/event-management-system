@@ -368,4 +368,154 @@ const getOrganizerEvents = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories, getEventAnalytics, getOrganizerEvents };
+// --- Edit Flow: 1. Request Edit ---
+const requestEditAccess = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organizer_id = req.user.id;
+
+        // Check if event exists and belongs to organizer
+        const eventResult = await db.query('SELECT * FROM events WHERE id = $1', [id]);
+        if (eventResult.rows.length === 0) return res.status(404).json({ message: 'Event not found' });
+        const event = eventResult.rows[0];
+
+        // Case-insensitive status check and type-agnostic ID check
+        if (String(event.organizer_id) !== String(organizer_id)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        if (event.status.toUpperCase() !== 'APPROVED') {
+            return res.status(400).json({ message: 'Only approved/active events need edit permission.' });
+        }
+
+        await db.query("UPDATE events SET edit_permission = 'REQUESTED' WHERE id = $1", [id]);
+        res.json({ message: 'Edit permission requested' });
+    } catch (err) {
+        console.error("requestEditAccess Error:", err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- Edit Flow: 2. Admin Grants Access ---
+const grantEditAccess = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query("UPDATE events SET edit_permission = 'GRANTED' WHERE id = $1", [id]);
+        res.json({ message: 'Edit access granted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- Edit Flow: Admin List Requests ---
+const getEditRequests = async (req, res) => {
+    try {
+        const requests = await db.query(`
+            SELECT 
+                e.id, 
+                e.title, 
+                COALESCE(u.name, 'Unknown Organizer') as organizer_name 
+            FROM events e 
+            LEFT JOIN users u ON e.organizer_id = u.id 
+            WHERE e.edit_permission = 'REQUESTED'
+        `);
+        res.json(requests.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- Edit Flow: 3. Submit Update ---
+const updateEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organizer_id = req.user.id;
+
+        let { title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, category_name, packages, schedule, upi_id } = req.body;
+
+        const eventRes = await db.query('SELECT * FROM events WHERE id = $1', [id]);
+        if (eventRes.rows.length === 0) return res.status(404).json({ message: 'Event not found' });
+        const event = eventRes.rows[0];
+
+        // Authorization check
+        if (req.user.role !== 'ADMIN' && String(event.organizer_id) !== String(organizer_id)) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        // --- STRICT EDIT LOGIC ---
+        // If it's an Organizer and event is APPROVED, check for GRANTED permission
+        if (req.user.role === 'ORGANIZER' && event.status === 'APPROVED') {
+            if (event.edit_permission !== 'GRANTED') {
+                return res.status(403).json({ message: 'You must request edit permission from Admin first.' });
+            }
+        }
+
+        // Handle Images
+        let finalImages = event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : [];
+        if (req.files && req.files.length > 0) {
+            const newImages = req.files.map(f => `/uploads/events/${f.filename}`);
+            finalImages = [...finalImages, ...newImages].slice(0, 5); // Keep max 5, append new ones
+        }
+
+        const banner_url = finalImages.length > 0 ? finalImages[0] : null;
+
+        // Update Query
+        // FORCE STATUS TO PENDING if Organizer updates it
+        let newStatus = event.status;
+        let newEditPerm = event.edit_permission;
+
+        if (req.user.role === 'ORGANIZER') {
+            newStatus = 'PENDING';
+            newEditPerm = null; // Reset permission
+        }
+
+        await db.query(
+            `UPDATE events SET 
+                title = COALESCE($1, title), 
+                description = COALESCE($2, description), 
+                location = COALESCE($3, location), 
+                city = COALESCE($4, city), 
+                start_date = COALESCE($5, start_date), 
+                end_date = COALESCE($6, end_date), 
+                max_capacity = COALESCE($7, max_capacity), 
+                status = $8,
+                edit_permission = $9,
+                banner_url = $10,
+                images = $11,
+                upi_id = COALESCE($12, upi_id)
+            WHERE id = $13`,
+            [title, description, location, city, start_date, end_date, max_capacity, newStatus, newEditPerm, banner_url, JSON.stringify(finalImages), upi_id, id]
+        );
+
+        // Update Packages & Schedule - Full Replace for simplicity
+        if (packages) {
+            if (typeof packages === 'string') packages = JSON.parse(packages);
+            await db.query('DELETE FROM event_packages WHERE event_id = $1', [id]);
+            for (const pkg of packages) {
+                await db.query('INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, pkg.name, pkg.price, pkg.features, pkg.capacity || 0]);
+            }
+        }
+
+        if (schedule) {
+            if (typeof schedule === 'string') schedule = JSON.parse(schedule);
+            await db.query('DELETE FROM event_schedules WHERE event_id = $1', [id]);
+            for (const item of schedule) {
+                await db.query(
+                    'INSERT INTO event_schedules (event_id, event_date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, item.date, item.startTime, item.endTime, item.capacity || max_capacity]
+                );
+            }
+        }
+
+        res.json({ message: 'Event updated successfully. It is now pending approval.' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories, getEventAnalytics, getOrganizerEvents, requestEditAccess, grantEditAccess, getEditRequests, updateEvent };
