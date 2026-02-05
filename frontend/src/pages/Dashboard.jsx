@@ -234,14 +234,7 @@ const Dashboard = () => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            {item.status === 'PENDING' ? (
-                                                <Link
-                                                    to={`/admin/review-edit/${item.id}`}
-                                                    className="px-6 py-2 text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 transition-colors shadow-sm"
-                                                >
-                                                    Review & Approve
-                                                </Link>
-                                            ) : item.edit_permission === 'SUBMITTED' ? (
+                                            {item.edit_permission === 'SUBMITTED' ? (
                                                 <Link
                                                     to={`/admin/review-edit/${item.id}`}
                                                     className="px-6 py-2 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors shadow-sm"
@@ -279,274 +272,306 @@ const Dashboard = () => {
                                     )}
                                 </div>
                             </div>
-                        ) : view === 'USERS' ? (
-                            <div className="space-y-12">
-                                <div className="space-y-6 text-left">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-primary-500" /> Platform Organizers
-                                    </h3>
-                                    <div className="card bg-white shadow-sm overflow-hidden border-none">
-                                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                                            <table className="w-full text-left">
-                                                <thead>
-                                                    <tr className="bg-slate-50 border-b border-slate-100">
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer</th>
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {users.filter(u => u.role === 'ORGANIZER').map((u) => (
-                                                        <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                                                            <td className="px-6 py-4">
-                                                                <div>
-                                                                    <p className="font-bold text-slate-900">{u.name}</p>
-                                                                    <p className="text-xs text-slate-500 font-medium">{u.email}</p>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <StatusBadge status={u.status} />
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
-                                                                <Link
-                                                                    to={`/admin/user/${u.id}`}
-                                                                    className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <Eye className="w-4 h-4" /> View
-                                                                </Link>
-                                                                {u.id !== user.id && (
-                                                                    <button
-                                                                        onClick={() => handleToggleUserStatus(u.id, u.status)}
-                                                                        className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${u.status === 'ACTIVE'
-                                                                            ? 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-100'
-                                                                            : 'text-green-600 bg-green-50 hover:bg-green-100 border border-green-100'
-                                                                            }`}
+                        ) :
+                            view === 'USERS' ? (
+                                <div className="space-y-12">
+                                    <div className="space-y-6 text-left">
+                                        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                            <Users className="w-5 h-5 text-primary-500" /> Platform Organizers
+                                        </h3>
+                                        <div className="card bg-white shadow-sm overflow-hidden border-none">
+                                            <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 border-b border-slate-100">
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {users.filter(u => u.role === 'ORGANIZER').map((u) => (
+                                                            <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                                                <td className="px-6 py-4">
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-900">{u.name}</p>
+                                                                        <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <StatusBadge status={u.status} />
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                                                                    <Link
+                                                                        to={`/admin/user/${u.id}`}
+                                                                        className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
                                                                     >
-                                                                        {u.status === 'ACTIVE' ? 'Block' : 'Unblock'}
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {users.filter(u => u.role === 'ORGANIZER').length === 0 && (
-                                                        <tr>
-                                                            <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No organizers found.</td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                                                        <Eye className="w-4 h-4" /> View
+                                                                    </Link>
+                                                                    {u.id !== user.id && (
+                                                                        <button
+                                                                            onClick={() => handleToggleUserStatus(u.id, u.status)}
+                                                                            className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${u.status === 'ACTIVE'
+                                                                                ? 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-100'
+                                                                                : 'text-green-600 bg-green-50 hover:bg-green-100 border border-green-100'
+                                                                                }`}
+                                                                        >
+                                                                            {u.status === 'ACTIVE' ? 'Block' : 'Unblock'}
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                        {users.filter(u => u.role === 'ORGANIZER').length === 0 && (
+                                                            <tr>
+                                                                <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No organizers found.</td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-6 text-left">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-slate-400" /> Platform Clients
-                                    </h3>
-                                    <div className="card bg-white shadow-sm overflow-hidden border-none text-left">
-                                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                                            <table className="w-full text-left">
-                                                <thead>
-                                                    <tr className="bg-slate-50 border-b border-slate-100">
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {users.filter(u => u.role === 'CLIENT').map((u) => (
-                                                        <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
-                                                            <td className="px-6 py-4">
-                                                                <div>
-                                                                    <p className="font-bold text-slate-900">{u.name}</p>
-                                                                    <p className="text-xs text-slate-500 font-medium">{u.email}</p>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <StatusBadge status={u.status} />
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
-                                                                <Link
-                                                                    to={`/admin/user/${u.id}`}
-                                                                    className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <Eye className="w-4 h-4" /> View
-                                                                </Link>
-                                                                {u.id !== user.id && (
-                                                                    <button
-                                                                        onClick={() => handleToggleUserStatus(u.id, u.status)}
-                                                                        className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${u.status === 'ACTIVE'
-                                                                            ? 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-100'
-                                                                            : 'text-green-600 bg-green-50 hover:bg-green-100 border border-green-100'
-                                                                            }`}
+                                    <div className="space-y-6 text-left">
+                                        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                            <Users className="w-5 h-5 text-slate-400" /> Platform Clients
+                                        </h3>
+                                        <div className="card bg-white shadow-sm overflow-hidden border-none text-left">
+                                            <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 border-b border-slate-100">
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {users.filter(u => u.role === 'CLIENT').map((u) => (
+                                                            <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                                                <td className="px-6 py-4">
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-900">{u.name}</p>
+                                                                        <p className="text-xs text-slate-500 font-medium">{u.email}</p>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <StatusBadge status={u.status} />
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                                                                    <Link
+                                                                        to={`/admin/user/${u.id}`}
+                                                                        className="px-3 py-2 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1"
                                                                     >
-                                                                        {u.status === 'ACTIVE' ? 'Block' : 'Unblock'}
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {users.filter(u => u.role === 'CLIENT').length === 0 && (
-                                                        <tr>
-                                                            <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No clients found.</td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                                                        <Eye className="w-4 h-4" /> View
+                                                                    </Link>
+                                                                    {u.id !== user.id && (
+                                                                        <button
+                                                                            onClick={() => handleToggleUserStatus(u.id, u.status)}
+                                                                            className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${u.status === 'ACTIVE'
+                                                                                ? 'text-red-600 bg-red-50 hover:bg-red-100 border border-red-100'
+                                                                                : 'text-green-600 bg-green-50 hover:bg-green-100 border border-green-100'
+                                                                                }`}
+                                                                        >
+                                                                            {u.status === 'ACTIVE' ? 'Block' : 'Unblock'}
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                        {users.filter(u => u.role === 'CLIENT').length === 0 && (
+                                                            <tr>
+                                                                <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No clients found.</td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : view === 'BOOKED' || user.role === 'CLIENT' ? (
-                            <div className="space-y-12">
-                                {unpaidBookings.length > 0 && (
+                            ) : view === 'BOOKED' || user.role === 'CLIENT' ? (
+                                <div className="space-y-12">
+                                    {unpaidBookings.length > 0 && (
+                                        <div className="space-y-6">
+                                            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                                <Clock className="w-5 h-5 text-amber-500" /> Pending Payments
+                                            </h3>
+                                            <div className="space-y-4">
+                                                {unpaidBookings.map((item) => (
+                                                    <BookingCard key={item.id} item={item} navigate={navigate} onRemove={() => handleRemoveBooking(item.id)} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-lg font-bold text-slate-700">Upcoming Bookings</h3>
+                                        <div className="space-y-4">
+                                            {activeBookings.length === 0 && unpaidBookings.length === 0 ? (
+                                                <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No upcoming bookings.</div>
+                                            ) : activeBookings.length === 0 ? (
+                                                <div className="card p-8 text-center text-slate-400 bg-slate-50 border-2 border-transparent">No confirmed bookings yet.</div>
+                                            ) : (
+                                                activeBookings.map((item) => (
+                                                    <BookingCard key={item.id} item={item} navigate={navigate} />
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : user.role === 'ADMIN' ? (
+                                <div className="space-y-12">
+                                    {pendingApprovals.length > 0 && (
+                                        <div className="space-y-6">
+                                            <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                                <Clock className="w-5 h-5 text-amber-500" /> Pending Approvals
+                                            </h3>
+                                            <div className="space-y-4">
+                                                {pendingApprovals.map((item) => (
+                                                    <div key={item.id} className="relative group">
+                                                        <Link
+                                                            to={`/admin/review-edit/${item.id}`}
+                                                            className="card p-6 flex items-center justify-between hover:border-amber-300 hover:shadow-lg transition-all border-2 border-transparent bg-white shadow-sm"
+                                                        >
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
+                                                                    <img
+                                                                        src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
+                                                                        alt=""
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => handleImageError(e, item.category_name, item.title)}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
+                                                                    <p className="text-sm text-slate-500">By: {item.organizer_name}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="px-6 py-2 text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 transition-all shadow-sm">
+                                                                    Review & Approve
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-6">
                                         <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                            <Clock className="w-5 h-5 text-amber-500" /> Pending Payments
+                                            <CheckCircle className="w-5 h-5 text-green-500" /> Approved Events
                                         </h3>
                                         <div className="space-y-4">
-                                            {unpaidBookings.map((item) => (
-                                                <BookingCard key={item.id} item={item} navigate={navigate} onRemove={() => handleRemoveBooking(item.id)} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="space-y-6">
-                                    <h3 className="text-lg font-bold text-slate-700">Upcoming Bookings</h3>
-                                    <div className="space-y-4">
-                                        {activeBookings.length === 0 && unpaidBookings.length === 0 ? (
-                                            <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No upcoming bookings.</div>
-                                        ) : activeBookings.length === 0 ? (
-                                            <div className="card p-8 text-center text-slate-400 bg-slate-50 border-2 border-transparent">No confirmed bookings yet.</div>
-                                        ) : (
-                                            activeBookings.map((item) => (
-                                                <BookingCard key={item.id} item={item} navigate={navigate} />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : user.role === 'ADMIN' ? (
-                            <div className="space-y-12">
-                                {/* Hiding Pending Approvals from Managed events - they are in Requests tab now */}
-                                <div className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <CheckCircle className="w-5 h-5 text-green-500" /> Approved Events
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {approvedEventsList.length === 0 ? (
-                                            <div className="card p-12 text-center text-slate-400">No approved events.</div>
-                                        ) : (
-                                            approvedEventsList.map((item) => (
-                                                <Link
-                                                    key={item.id}
-                                                    to={`/event/analytics/${item.id}`}
-                                                    className="card p-6 flex items-center justify-between hover:border-primary-300 hover:shadow-lg transition-all border-2 border-transparent group bg-white shadow-sm"
-                                                >
-                                                    <>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                                                                <img
-                                                                    src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
-                                                                    alt=""
-                                                                    className="w-full h-full object-cover"
-                                                                    onError={(e) => handleImageError(e, item.category_name, item.title)}
-                                                                />
+                                            {approvedEventsList.length === 0 ? (
+                                                <div className="card p-12 text-center text-slate-400">No approved events.</div>
+                                            ) : (
+                                                approvedEventsList.map((item) => (
+                                                    <Link
+                                                        key={item.id}
+                                                        to={`/event/analytics/${item.id}`}
+                                                        className="card p-6 flex items-center justify-between hover:border-primary-300 hover:shadow-lg transition-all border-2 border-transparent group bg-white shadow-sm"
+                                                    >
+                                                        <>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
+                                                                    <img
+                                                                        src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
+                                                                        alt=""
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => handleImageError(e, item.category_name, item.title)}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
+                                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
-                                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                View Stats
-                                                            </div>
-                                                            <StatusBadge status="APPROVED" />
-                                                            <button
-                                                                onClick={async (e) => {
-                                                                    e.preventDefault(); // Prevent navigation
-                                                                    e.stopPropagation(); // Stop bubbling to Link
-                                                                    const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
-                                                                    if (result.isConfirmed) {
-                                                                        try {
-                                                                            await api.delete(`/events/${item.id}`);
-                                                                            setItems(prev => ({
-                                                                                ...prev,
-                                                                                approved: prev.approved.filter(e => e.id !== item.id)
-                                                                            }));
-                                                                            showSuccess('Deleted', 'Event has been deleted successfully.');
-                                                                        } catch (err) {
-                                                                            showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    View Stats
+                                                                </div>
+                                                                <StatusBadge status="APPROVED" />
+                                                                <button
+                                                                    onClick={async (e) => {
+                                                                        e.preventDefault(); // Prevent navigation
+                                                                        e.stopPropagation(); // Stop bubbling to Link
+                                                                        const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                                        if (result.isConfirmed) {
+                                                                            try {
+                                                                                await api.delete(`/events/${item.id}`);
+                                                                                setItems(prev => ({
+                                                                                    ...prev,
+                                                                                    approved: prev.approved.filter(e => e.id !== item.id)
+                                                                                }));
+                                                                                showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                                            } catch (err) {
+                                                                                showError('Error', err.response?.data?.message || 'Failed to delete');
+                                                                            }
                                                                         }
-                                                                    }
-                                                                }}
-                                                                className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                title="Delete Event"
-                                                            >
-                                                                <Trash className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                </Link>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-12">
-                                <div className="space-y-6">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <Clock className="w-5 h-5 text-amber-500" /> Pending for Approval
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {pendingApprovals.length === 0 ? (
-                                            <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
-                                        ) : (
-                                            pendingApprovals.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <CheckCircle className="w-5 h-5 text-green-500" /> Active Events
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {activeEvents.length === 0 ? (
-                                            <div className="card p-12 text-center text-slate-400 bg-slate-50 border-2 border-transparent">No active events.</div>
-                                        ) : (
-                                            activeEvents.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-
-                                {completedEvents.length > 0 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-400 flex items-center gap-2">
-                                            <CheckCircle className="w-5 h-5 text-slate-300" /> Completed Events
-                                        </h3>
-                                        <div className="space-y-4 opacity-75 grayscale-[0.3] hover:grayscale-0 transition-all">
-                                            {completedEvents.map((item) => (
-                                                <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
-                                            ))}
+                                                                    }}
+                                                                    className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                    title="Delete Event"
+                                                                >
+                                                                    <Trash className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    </Link>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        )}
+                                </div>
+                            ) : (
+                                <div className="space-y-12">
+                                    <div className="space-y-6">
+                                        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                            <Clock className="w-5 h-5 text-amber-500" /> Pending for Approval
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {pendingApprovals.length === 0 ? (
+                                                <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
+                                            ) : (
+                                                pendingApprovals.map((item) => (
+                                                    <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                            <CheckCircle className="w-5 h-5 text-green-500" /> Active Events
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {activeEvents.length === 0 ? (
+                                                <div className="card p-12 text-center text-slate-400 bg-slate-50 border-2 border-transparent">No active events.</div>
+                                            ) : (
+                                                activeEvents.map((item) => (
+                                                    <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {completedEvents.length > 0 && (
+                                        <div className="space-y-6">
+                                            <h3 className="text-lg font-bold text-slate-400 flex items-center gap-2">
+                                                <CheckCircle className="w-5 h-5 text-slate-300" /> Completed Events
+                                            </h3>
+                                            <div className="space-y-4 opacity-75 grayscale-[0.3] hover:grayscale-0 transition-all">
+                                                {completedEvents.map((item) => (
+                                                    <OrganizerEventCard key={item.id} item={item} items={items} setItems={setItems} navigate={navigate} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                     </div>
                 </div>
 
@@ -565,7 +590,7 @@ const Dashboard = () => {
                     )
                 }
             </div>
-        </div>
+        </div >
     );
 };
 

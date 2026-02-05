@@ -403,6 +403,7 @@ const getBookingById = async (req, res) => {
         );
         booking.items = itemsRes.rows;
 
+        // Generating/Fetching Unique Tickets
         const ticketsRes = await db.query(
             'SELECT t.*, p.package_name FROM tickets t JOIN event_packages p ON t.package_id = p.id WHERE t.booking_id = $1',
             [id]

@@ -425,7 +425,7 @@ const getEditRequests = async (req, res) => {
                 COALESCE(u.name, 'Unknown Organizer') as organizer_name 
             FROM events e 
             LEFT JOIN users u ON e.organizer_id = u.id 
-            WHERE e.edit_permission IN ('REQUESTED', 'SUBMITTED') OR e.status = 'PENDING'
+            WHERE e.edit_permission IN ('REQUESTED', 'SUBMITTED')
             ORDER BY e.created_at DESC
         `);
         res.json(requests.rows);
