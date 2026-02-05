@@ -106,7 +106,7 @@ const BookingView = () => {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase">Status</p>
-                                <p className="font-bold">{booking.payment_status === 'PAID' ? 'Fully Paid' : 'Payment Pending'}</p>
+                                <p className={`font-bold ${booking.payment_status === 'PAID' ? 'text-green-600' : 'text-slate-900'}`}>{booking.payment_status === 'PAID' ? 'Fully Paid' : 'Payment Pending'}</p>
                             </div>
                         </div>
                     </div>

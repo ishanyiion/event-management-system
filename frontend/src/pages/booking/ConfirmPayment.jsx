@@ -67,7 +67,17 @@ const ConfirmPayment = () => {
                     <Smartphone className="w-8 h-8" />
                 </div>
                 <h1 className="text-3xl font-extrabold text-slate-900">Secure UPI Payment</h1>
-                <p className="text-slate-500 font-medium">Scan & Pay using your favorite UPI app</p>
+                <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8 text-sm font-bold text-slate-500">
+                    <span className="flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">1</span> Scan QR</span>
+                    <ArrowRight className="hidden md:block w-4 h-4 text-slate-300" />
+                    <span className="flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">2</span> Pay via App</span>
+                    <ArrowRight className="hidden md:block w-4 h-4 text-slate-300" />
+                    <span className="flex items-center gap-2 text-primary-600"><span className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs">3</span> Enter Ref. ID</span>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 text-amber-800 p-3 rounded-xl text-xs font-bold inline-block mx-auto max-w-lg mt-2">
+                    <AlertCircle className="w-4 h-4 inline mr-1 mb-0.5" />
+                    IMPORTANT: Scanning alone does not confirm your order. You MUST enter the Transaction/UTR ID below.
+                </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 items-start">
@@ -200,20 +210,23 @@ const ConfirmPayment = () => {
                         </div>
 
                         {/* Transaction ID */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-500 uppercase">Transaction ID (Ref No.)</label>
+                        <div className="space-y-2 pt-2">
+                            <label className="text-xs font-black text-primary-600 uppercase flex items-center justify-between">
+                                Transaction ID (Ref No.)
+                                <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full animate-pulse">REQUIRED</span>
+                            </label>
                             <div className="relative group">
                                 <ShieldCheck className="absolute left-4 top-3.5 w-5 h-5 text-green-500 transition-all group-focus-within:scale-110" />
                                 <input
                                     type="text"
-                                    className="input h-12 pl-12 rounded-xl border-slate-200 focus:border-primary-500 font-bold text-slate-700"
-                                    placeholder="Enter ID from payment app"
+                                    className="input h-12 pl-12 rounded-xl border-2 border-primary-100 focus:border-primary-500 font-bold text-slate-700 bg-primary-50/30"
+                                    placeholder="Enter ID from payment app (e.g., T123456789)"
                                     value={txnId}
                                     onChange={(e) => setTxnId(e.target.value)}
                                     required
                                 />
                             </div>
-                            <p className="text-[10px] text-slate-400 font-medium px-1">Check your payment app's history for the Ref. Number</p>
+                            <p className="text-[10px] text-slate-400 font-medium px-1">Check your payment app's history for the Ref. Number / UTR</p>
                         </div>
                     </div>
 

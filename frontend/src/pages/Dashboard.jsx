@@ -644,7 +644,7 @@ const BookingCard = ({ item, navigate, expired, onRemove }) => {
                         <Trash className="w-5 h-5" />
                     </button>
                 )}
-                <StatusBadge status={expired ? 'ENDED' : (item.payment_status === 'UNPAID' ? 'UNPAID' : (item.status || item.booking_status))} />
+                <StatusBadge status={expired ? 'ENDED' : (item.payment_status === 'PAID' ? 'PAID' : (item.status || item.booking_status))} />
             </div>
         </Link>
     );
@@ -671,7 +671,7 @@ const StatusBadge = ({ status }) => {
         CANCELLED: 'bg-slate-100 text-slate-700',
         ENDED: 'bg-slate-200 text-slate-500',
         UNPAID: 'bg-amber-100 text-amber-700',
-        PAID: 'bg-green-100 text-green-700',
+        PAID: 'bg-green-500 text-white shadow-green-200 shadow-md', // Highlighted style for PAID
         ACTIVE: 'bg-green-100 text-green-700',
         BLOCKED: 'bg-red-100 text-red-700',
     };
