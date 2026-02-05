@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, Calendar, MapPin, Tag, Smartphone } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, Calendar, MapPin, Tag, Smartphone, User, Mail, Phone } from 'lucide-react';
 import api from '../../utils/api';
 import { showConfirm, showSuccess, showError } from '../../utils/swalHelper';
 
@@ -113,6 +113,32 @@ const ReviewEdit = () => {
                     </button>
                 </div>
             </header>
+
+            {/* Organizer Profile Card */}
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start md:items-center gap-6">
+                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                    <User className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="text-lg font-bold text-slate-900">Organizer Details</h3>
+                    <div className="flex flex-wrap gap-x-8 gap-y-2 mt-2 text-sm">
+                        <div className="flex items-center gap-2 text-slate-600">
+                            <User className="w-4 h-4 text-slate-400" />
+                            <span className="font-semibold">{event.organizer_name || 'Unknown Name'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                            <Mail className="w-4 h-4 text-slate-400" />
+                            <span className="font-medium">{event.organizer_email || 'No Email'}</span>
+                        </div>
+                        {event.organizer_mobile && (
+                            <div className="flex items-center gap-2 text-slate-600">
+                                <Phone className="w-4 h-4 text-slate-400" />
+                                <span className="font-medium">{event.organizer_mobile}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             <div className="grid lg:grid-cols-2 gap-8 text-left">
                 {/* Basic Info Comparison */}

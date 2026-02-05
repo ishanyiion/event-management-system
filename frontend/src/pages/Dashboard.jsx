@@ -181,6 +181,12 @@ const Dashboard = () => {
                                     >
                                         Users
                                     </button>
+                                    <button
+                                        onClick={() => navigate('/events')}
+                                        className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-600 transition-all"
+                                    >
+                                        Events
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -192,20 +198,6 @@ const Dashboard = () => {
                     )}
                 </div>
             </header >
-
-            {
-                user.role === 'ADMIN' && stats && (
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <div onClick={() => setView('USERS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
-                            <StatCard icon={<Users />} label="Total Users" value={stats.totalUsers} color="bg-blue-500" />
-                        </div>
-                        <div onClick={() => navigate('/events')} className="cursor-pointer transition-transform hover:scale-[1.02]">
-                            <StatCard icon={<Calendar />} label="Total Events" value={stats.totalEvents} color="bg-purple-500" />
-                        </div>
-                        <StatCard icon={<Clock />} label="Pending" value={stats.pendingEvents} color="bg-amber-500" />
-                    </div>
-                )
-            }
 
             <div className="space-y-12">
                 <div className="space-y-6">
@@ -650,17 +642,6 @@ const BookingCard = ({ item, navigate, expired, onRemove }) => {
     );
 };
 
-const StatCard = ({ icon, label, value, color }) => (
-    <div className="card p-6 flex items-center gap-4 bg-white shadow-sm border-none">
-        <div className={`p-3 rounded-2xl text-white ${color} shadow-lg`}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h3>
-        </div>
-    </div>
-);
 
 const StatusBadge = ({ status }) => {
     const styles = {
