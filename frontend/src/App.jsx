@@ -13,6 +13,7 @@ import ConfirmPayment from './pages/booking/ConfirmPayment';
 import BookingView from './pages/booking/BookingView';
 import AdminUserDetails from './pages/admin/AdminUserDetails';
 import EventAnalytics from './pages/EventAnalytics';
+import ReviewEdit from './pages/admin/ReviewEdit';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
               <Route path="/booking/confirm/:bookingId" element={<ConfirmPayment />} />
               <Route path="/booking/view/:id" element={<BookingView />} />
               <Route path="/admin/user/:id" element={<AdminUserDetails />} />
+              <Route path="/admin/review-edit/:id" element={<ReviewEdit />} />
             </Routes>
           </main>
         </div>

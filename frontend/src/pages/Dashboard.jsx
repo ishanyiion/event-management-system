@@ -147,9 +147,14 @@ const Dashboard = () => {
                         <div className="flex bg-slate-100 p-1 rounded-2xl shadow-inner mr-2">
                             <button
                                 onClick={() => setView('MANAGED')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'MANAGED' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'MANAGED' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 Managed Events
+                                {user.role === 'ADMIN' && stats?.pendingEvents > 0 && (
+                                    <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                        {stats.pendingEvents}
+                                    </span>
+                                )}
                             </button>
                             <button
                                 onClick={() => setView('BOOKED')}
@@ -161,9 +166,14 @@ const Dashboard = () => {
                                 <>
                                     <button
                                         onClick={() => setView('REQUESTS')}
-                                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'REQUESTS' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'REQUESTS' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
                                     >
                                         Requests
+                                        {(stats?.editRequestsCount > 0 || requests.length > 0) && (
+                                            <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                                {stats?.editRequestsCount || requests.length}
+                                            </span>
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => setView('USERS')}
@@ -185,7 +195,7 @@ const Dashboard = () => {
 
             {
                 user.role === 'ADMIN' && stats && (
-                    <div className="grid md:grid-cols-4 gap-6">
+                    <div className="grid md:grid-cols-3 gap-6">
                         <div onClick={() => setView('USERS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
                             <StatCard icon={<Users />} label="Total Users" value={stats.totalUsers} color="bg-blue-500" />
                         </div>
@@ -193,9 +203,6 @@ const Dashboard = () => {
                             <StatCard icon={<Calendar />} label="Total Events" value={stats.totalEvents} color="bg-purple-500" />
                         </div>
                         <StatCard icon={<Clock />} label="Pending" value={stats.pendingEvents} color="bg-amber-500" />
-                        <div onClick={() => setView('REQUESTS')} className="cursor-pointer transition-transform hover:scale-[1.02]">
-                            <StatCard icon={<Plus />} label="Edit Req." value={stats.editRequestsCount || requests.length} color="bg-indigo-500" />
-                        </div>
                     </div>
                 )
             }
@@ -221,26 +228,47 @@ const Dashboard = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-900">{item.title}</h4>
-                                                    <p className="text-sm text-slate-500 font-medium">Requested by: <span className="text-indigo-600">@{item.organizer_name}</span></p>
+                                                    <p className="text-sm text-slate-500 font-medium">
+                                                        {item.edit_permission === 'SUBMITTED' ? 'Changes submitted by:' : 'Requested by:'}
+                                                        <span className="text-indigo-600 ml-1">@{item.organizer_name}</span>
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={async () => {
-                                                    const result = await showConfirm('Grant Edit Access?', `Allow "${item.organizer_name}" to edit "${item.title}"?`);
-                                                    if (result.isConfirmed) {
-                                                        try {
-                                                            await api.put(`/events/grant-edit/${item.id}`);
-                                                            setRequests(requests.filter(r => r.id !== item.id));
-                                                            showSuccess('Granted', 'Edit access has been granted.');
-                                                        } catch (err) {
-                                                            showError('Error', err.response?.data?.message || 'Failed to grant access');
-                                                        }
-                                                    }
-                                                }}
-                                                className="px-6 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 transition-colors shadow-sm"
-                                            >
-                                                Grant Edit Access
-                                            </button>
+                                            {item.status === 'PENDING' ? (
+                                                <Link
+                                                    to={`/admin/review-edit/${item.id}`}
+                                                    className="px-6 py-2 text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 transition-colors shadow-sm"
+                                                >
+                                                    Review & Approve
+                                                </Link>
+                                            ) : item.edit_permission === 'SUBMITTED' ? (
+                                                <Link
+                                                    to={`/admin/review-edit/${item.id}`}
+                                                    className="px-6 py-2 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-colors shadow-sm"
+                                                >
+                                                    Review Changes
+                                                </Link>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100">
+                                                        Access Request
+                                                    </span>
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                await api.put(`/events/grant-edit/${item.id}`);
+                                                                setRequests(requests.filter(r => r.id !== item.id));
+                                                                showSuccess('Granted', 'Access granted.');
+                                                            } catch (err) {
+                                                                showError('Error', 'Failed to grant access');
+                                                            }
+                                                        }}
+                                                        className="px-6 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 transition-colors shadow-sm"
+                                                    >
+                                                        Grant Access
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     {requests.length === 0 && (
@@ -401,76 +429,10 @@ const Dashboard = () => {
                             </div>
                         ) : user.role === 'ADMIN' ? (
                             <div className="space-y-12">
+                                {/* Hiding Pending Approvals from Managed events - they are in Requests tab now */}
                                 <div className="space-y-6">
-                                    <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                                        <Clock className="w-5 h-5 text-amber-500" /> Pending Approvals
-                                    </h3>
                                     <div className="space-y-4">
-                                        {pendingApprovals.map((item) => (
-                                            <div key={item.id} className="card p-6 flex items-center justify-between hover:border-slate-300 transition-all shadow-sm">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                                                        <img
-                                                            src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
-                                                            alt=""
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => handleImageError(e, item.category_name, item.title)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-900">{item.title}</h4>
-                                                        <p className="text-sm text-slate-500">By: {item.organizer_name}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={async () => {
-                                                            const result = await showConfirm('Approve Event?', `Are you sure you want to approve "${item.title}"?`);
-                                                            if (result.isConfirmed) {
-                                                                try {
-                                                                    await api.put(`/events/approve/${item.id}`);
-                                                                    const p = await api.get('/admin/events/pending');
-                                                                    const a = await api.get('/admin/events/approved');
-                                                                    setItems({ pending: p.data, approved: a.data });
-                                                                    showSuccess('Approved', 'Event has been approved.');
-                                                                } catch (err) {
-                                                                    showError('Error', err.response?.data?.message || 'Failed to approve');
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="px-6 py-2 text-sm font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-xl border border-green-100 transition-colors"
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            const result = await showConfirm('Reject Event?', `Are you sure you want to reject "${item.title}"? This action cannot be undone.`);
-                                                            if (result.isConfirmed) {
-                                                                try {
-                                                                    await api.delete(`/events/${item.id}`);
-                                                                    const p = await api.get('/admin/events/pending');
-                                                                    if (items.pending) {
-                                                                        setItems(prev => ({ ...prev, pending: prev.pending.filter(e => e.id !== item.id) }));
-                                                                    } else {
-                                                                        const a = await api.get('/admin/events/approved');
-                                                                        setItems({ pending: p.data, approved: a.data });
-                                                                    }
-                                                                    showSuccess('Rejected', 'Event has been rejected correctly.');
-                                                                } catch (err) {
-                                                                    showError('Error', err.response?.data?.message || 'Failed to reject');
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="px-6 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 transition-colors"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {pendingApprovals.length === 0 && (
-                                            <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
-                                        )}
+                                        <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No events pending approval.</div>
                                     </div>
                                 </div>
 
@@ -728,45 +690,25 @@ const OrganizerEventCard = ({ item, items, setItems, navigate }) => {
                     <StatusBadge status={item.status || item.booking_status} />
                     {item.status === 'APPROVED' && (
                         <>
-                            {!item.edit_permission ? (
-                                <button
-                                    onClick={async (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        const result = await showConfirm('Request Edit?', 'You need Admin permission to edit an approved event. Request now?');
-                                        if (result.isConfirmed) {
-                                            try {
-                                                await api.put(`/events/request-edit/${item.id}`);
-                                                setItems(items.map(i => i.id === item.id ? { ...i, edit_permission: 'REQUESTED' } : i));
-                                                showSuccess('Requested', 'Edit permission has been requested.');
-                                            } catch (err) {
-                                                showError('Request Failed', err.response?.data?.message || 'Failed to request edit');
-                                            }
-                                        }
-                                    }}
-                                    className="px-4 py-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100"
-                                >
-                                    Request Edit
-                                </button>
-                            ) : item.edit_permission === 'REQUESTED' ? (
+                            {item.edit_permission === 'SUBMITTED' ? (
                                 <button
                                     disabled
-                                    className="px-4 py-2 text-xs font-bold text-slate-400 bg-slate-50 rounded-xl border border-slate-100 cursor-not-allowed"
+                                    className="px-4 py-2 text-xs font-bold text-blue-400 bg-blue-50 rounded-xl border border-blue-100 cursor-not-allowed"
                                 >
-                                    Wait for Approval
+                                    Review Pending
                                 </button>
-                            ) : item.edit_permission === 'GRANTED' ? (
+                            ) : (
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         navigate(`/edit-event/${item.id}`);
                                     }}
-                                    className="px-4 py-2 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100"
+                                    className="px-4 py-2 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 shadow-sm transition-all hover:scale-105"
                                 >
-                                    Edit Now
+                                    Propose Edits
                                 </button>
-                            ) : null}
+                            )}
                         </>
                     )}
                     <button

@@ -8,7 +8,7 @@ const getDashboardStats = async (req, res) => {
         const pendingEvents = await db.query('SELECT COUNT(*) FROM events WHERE status = \'PENDING\'');
         const totalRevenue = await db.query('SELECT SUM(amount) FROM payments WHERE status = \'SUCCESS\'');
         const totalBookings = await db.query('SELECT COUNT(*) FROM bookings');
-        const editRequests = await db.query("SELECT COUNT(*) FROM events WHERE edit_permission = 'REQUESTED'");
+        const editRequests = await db.query("SELECT COUNT(*) FROM events WHERE edit_permission IN ('REQUESTED', 'SUBMITTED')");
 
         res.json({
             totalUsers: parseInt(totalUsers.rows[0].count),
@@ -58,7 +58,15 @@ const getPendingEvents = async (req, res) => {
 
 const getApprovedEvents = async (req, res) => {
     try {
-        const events = await db.query('SELECT e.*, u.name as organizer_name, c.name as category_name FROM events e JOIN users u ON e.organizer_id = u.id LEFT JOIN categories c ON e.category_id = c.id WHERE e.status = \'APPROVED\' ORDER BY e.created_at DESC');
+        const events = await db.query(`
+            SELECT e.*, u.name as organizer_name, c.name as category_name 
+            FROM events e 
+            JOIN users u ON e.organizer_id = u.id 
+            LEFT JOIN categories c ON e.category_id = c.id 
+            WHERE e.status = 'APPROVED' 
+            AND (e.edit_permission IS NULL OR (e.edit_permission != 'SUBMITTED' AND e.edit_permission != 'REQUESTED'))
+            ORDER BY e.created_at DESC
+        `);
         res.json(events.rows);
     } catch (err) {
         console.error(err);

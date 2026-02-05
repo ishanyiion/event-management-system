@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Calendar, User, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -5,11 +6,34 @@ import { useAuth } from '../../context/AuthContext';
 const Navbar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [adminStats, setAdminStats] = useState(null);
+
+    useEffect(() => {
+        if (user?.role !== 'ADMIN') {
+            setAdminStats(null);
+            return;
+        }
+
+        const fetchAdminStats = async () => {
+            try {
+                const res = await api.get('/admin/dashboard');
+                setAdminStats(res.data);
+            } catch (err) {
+                console.error('Navbar stats fetch failed:', err);
+            }
+        };
+
+        fetchAdminStats();
+        const interval = setInterval(fetchAdminStats, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }, [user]);
 
     const handleLogout = () => {
         logout();
         navigate('/');
     };
+
+    const totalRequests = adminStats ? (adminStats.pendingEvents + adminStats.editRequestsCount) : 0;
 
     return (
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -36,9 +60,14 @@ const Navbar = () => {
                     {user && (
                         <NavLink
                             to="/dashboard"
-                            className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                            className={({ isActive }) => `nav-link relative pr-4 ${isActive ? 'nav-link-active' : ''}`}
                         >
                             Dashboard
+                            {user.role === 'ADMIN' && totalRequests > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white animate-bounce">
+                                    {totalRequests}
+                                </span>
+                            )}
                         </NavLink>
                     )}
                 </div>

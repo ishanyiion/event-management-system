@@ -1,0 +1,13 @@
+const { Pool } = require('pg');
+const pool = new Pool({ connectionString: 'postgres://postgres:postgres@localhost:5432/event_management' });
+async function check() {
+    try {
+        const res = await pool.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'events';");
+        console.log(JSON.stringify(res.rows, null, 2));
+    } catch (err) {
+        console.error(err);
+    } finally {
+        await pool.end();
+    }
+}
+check();

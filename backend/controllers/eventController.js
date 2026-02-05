@@ -149,7 +149,15 @@ const getEvents = async (req, res) => {
 
 const getEventById = async (req, res) => {
     try {
-        const event = await db.query('SELECT e.*, c.name as category_name FROM events e LEFT JOIN categories c ON e.category_id = c.id WHERE e.id = $1', [req.params.id]);
+        const event = await db.query(
+            `SELECT e.*, c.name as category_name, 
+             u.name as organizer_name, u.email as organizer_email, u.mobile as organizer_mobile 
+             FROM events e 
+             LEFT JOIN categories c ON e.category_id = c.id 
+             LEFT JOIN users u ON e.organizer_id = u.id
+             WHERE e.id = $1`,
+            [req.params.id]
+        );
         if (event.rows.length === 0) {
             return res.status(404).json({ message: 'Event not found' });
         }
@@ -413,14 +421,87 @@ const getEditRequests = async (req, res) => {
     try {
         const requests = await db.query(`
             SELECT 
-                e.id, 
-                e.title, 
+                e.*, 
                 COALESCE(u.name, 'Unknown Organizer') as organizer_name 
             FROM events e 
             LEFT JOIN users u ON e.organizer_id = u.id 
-            WHERE e.edit_permission = 'REQUESTED'
+            WHERE e.edit_permission IN ('REQUESTED', 'SUBMITTED') OR e.status = 'PENDING'
+            ORDER BY e.created_at DESC
         `);
         res.json(requests.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- Edit Flow: 4. Admin Approves Update ---
+const approveUpdate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const eventRes = await db.query('SELECT proposed_data FROM events WHERE id = $1', [id]);
+        if (eventRes.rows.length === 0) return res.status(404).json({ message: 'Event not found' });
+
+        const proposed = eventRes.rows[0].proposed_data;
+        if (!proposed) return res.status(400).json({ message: 'No proposed changes found' });
+
+        const { title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, upi_id, images, banner_url, packages, schedule } = proposed;
+
+        // 1. Update main event table
+        await db.query(
+            `UPDATE events SET 
+                title = COALESCE($1, title), 
+                description = COALESCE($2, description), 
+                location = COALESCE($3, location), 
+                city = COALESCE($4, city), 
+                start_date = COALESCE($5, start_date), 
+                end_date = COALESCE($6, end_date), 
+                start_time = COALESCE($7, start_time),
+                end_time = COALESCE($8, end_time),
+                max_capacity = COALESCE($9, max_capacity), 
+                category_id = COALESCE($10, category_id),
+                upi_id = COALESCE($11, upi_id),
+                images = COALESCE($12, images),
+                banner_url = COALESCE($13, banner_url),
+                edit_permission = NULL,
+                proposed_data = NULL
+            WHERE id = $14`,
+            [title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, upi_id, JSON.stringify(images), banner_url, id]
+        );
+
+        // 2. Update Packages
+        if (packages) {
+            await db.query('DELETE FROM event_packages WHERE event_id = $1', [id]);
+            for (const pkg of packages) {
+                await db.query('INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]);
+            }
+        }
+
+        // 3. Update Schedule
+        if (schedule) {
+            await db.query('DELETE FROM event_schedules WHERE event_id = $1', [id]);
+            for (const item of schedule) {
+                await db.query(
+                    'INSERT INTO event_schedules (event_id, event_date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, item.date || item.event_date, item.startTime || item.start_time, item.endTime || item.end_time, item.capacity || max_capacity]
+                );
+            }
+        }
+
+        res.json({ message: 'Updates approved and applied to live event.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// --- Edit Flow: 5. Admin Rejects Update ---
+const rejectUpdate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query("UPDATE events SET edit_permission = 'GRANTED', proposed_data = NULL WHERE id = $1", [id]);
+        res.json({ message: 'Update rejected. Organizer can resubmit.' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -444,14 +525,41 @@ const updateEvent = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // --- STRICT EDIT LOGIC ---
-        // If it's an Organizer and event is APPROVED, check for GRANTED permission
+        // --- PROPOSED CHANGE LOGIC ---
         if (req.user.role === 'ORGANIZER' && event.status === 'APPROVED') {
-            if (event.edit_permission !== 'GRANTED') {
-                return res.status(403).json({ message: 'You must request edit permission from Admin first.' });
+            // No longer checking for GRANTED. Organizers can propose changes directly.
+            if (event.edit_permission === 'SUBMITTED') {
+                return res.status(403).json({ message: 'A change request is already pending review.' });
             }
+
+            // Handle Images for proposed data
+            let finalImages = event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : [];
+            if (req.files && req.files.length > 0) {
+                const newImages = req.files.map(f => `/uploads/events/${f.filename}`);
+                finalImages = [...finalImages, ...newImages].slice(0, 5);
+            }
+            const banner_url = finalImages.length > 0 ? finalImages[0] : null;
+
+            if (typeof packages === 'string') packages = JSON.parse(packages);
+            if (typeof schedule === 'string') schedule = JSON.parse(schedule);
+
+            const proposed_data = {
+                title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, upi_id,
+                images: finalImages,
+                banner_url,
+                packages,
+                schedule
+            };
+
+            await db.query(
+                "UPDATE events SET proposed_data = $1, edit_permission = 'SUBMITTED' WHERE id = $2",
+                [JSON.stringify(proposed_data), id]
+            );
+
+            return res.json({ message: 'Changes submitted for admin review. The live event remains unchanged.' });
         }
 
+        // --- EXISTING LOGIC (For PENDING events or ADMIN edits) ---
         // Handle Images
         let finalImages = event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : [];
         if (req.files && req.files.length > 0) {
@@ -462,7 +570,7 @@ const updateEvent = async (req, res) => {
         const banner_url = finalImages.length > 0 ? finalImages[0] : null;
 
         // Update Query
-        // FORCE STATUS TO PENDING if Organizer updates it
+        // FORCE STATUS TO PENDING if Organizer updates it (and it's not already approved - handled above)
         let newStatus = event.status;
         let newEditPerm = event.edit_permission;
 
@@ -495,7 +603,7 @@ const updateEvent = async (req, res) => {
             await db.query('DELETE FROM event_packages WHERE event_id = $1', [id]);
             for (const pkg of packages) {
                 await db.query('INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
-                    [id, pkg.name, pkg.price, pkg.features, pkg.capacity || 0]);
+                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]);
             }
         }
 
@@ -505,12 +613,12 @@ const updateEvent = async (req, res) => {
             for (const item of schedule) {
                 await db.query(
                     'INSERT INTO event_schedules (event_id, event_date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5)',
-                    [id, item.date, item.startTime, item.endTime, item.capacity || max_capacity]
+                    [id, item.date || item.event_date, item.startTime || item.start_time, item.endTime || item.end_time, item.capacity || max_capacity]
                 );
             }
         }
 
-        res.json({ message: 'Event updated successfully. It is now pending approval.' });
+        res.json({ message: req.user.role === 'ADMIN' ? 'Event updated successfully.' : 'Event updated successfully. It is now pending approval.' });
 
     } catch (err) {
         console.error(err);
@@ -518,4 +626,4 @@ const updateEvent = async (req, res) => {
     }
 };
 
-module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories, getEventAnalytics, getOrganizerEvents, requestEditAccess, grantEditAccess, getEditRequests, updateEvent };
+module.exports = { createEvent, getEvents, getEventById, approveEvent, deleteEvent, getCategories, getEventAnalytics, getOrganizerEvents, requestEditAccess, grantEditAccess, getEditRequests, updateEvent, approveUpdate, rejectUpdate };

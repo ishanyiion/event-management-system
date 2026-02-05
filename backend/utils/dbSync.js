@@ -34,6 +34,8 @@ const schemaDefinition = {
         { name: 'status', type: 'VARCHAR(50) DEFAULT \'PENDING\'' },
         { name: 'banner_url', type: 'VARCHAR(255)' },
         { name: 'images', type: 'TEXT' },
+        { name: 'edit_permission', type: 'VARCHAR(50)' },
+        { name: 'proposed_data', type: 'JSONB' },
         { name: 'created_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ],
     event_schedules: [
