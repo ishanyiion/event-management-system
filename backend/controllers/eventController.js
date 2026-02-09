@@ -469,12 +469,43 @@ const approveUpdate = async (req, res) => {
             [title, description, location, city, start_date, end_date, start_time, end_time, max_capacity, category_id, upi_id, JSON.stringify(images), banner_url, id]
         );
 
-        // 2. Update Packages
+        // 2. Update Packages - Intelligent Update
         if (packages) {
-            await db.query('DELETE FROM event_packages WHERE event_id = $1', [id]);
-            for (const pkg of packages) {
-                await db.query('INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
-                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]);
+            // 1. Get existing packages
+            const existingPkgs = await db.query('SELECT id FROM event_packages WHERE event_id = $1', [id]);
+            const existingIds = existingPkgs.rows.map(p => p.id);
+
+            // 2. Separate updates and inserts
+            const updates = packages.filter(p => p.id && existingIds.includes(parseInt(p.id)));
+            const inserts = packages.filter(p => !p.id || !existingIds.includes(parseInt(p.id)));
+            const incomingIds = updates.map(p => parseInt(p.id));
+
+            // 3. Perform Updates
+            for (const pkg of updates) {
+                await db.query(
+                    'UPDATE event_packages SET package_name=$1, price=$2, features=$3, capacity=$4 WHERE id=$5 AND event_id=$6',
+                    [pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0, pkg.id, id]
+                );
+            }
+
+            // 4. Perform Inserts
+            for (const pkg of inserts) {
+                await db.query(
+                    'INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]
+                );
+            }
+
+            // 5. Handle Deletions (Safely)
+            const toDelete = existingIds.filter(eid => !incomingIds.includes(eid));
+            if (toDelete.length > 0) {
+                for (const delId of toDelete) {
+                    try {
+                        await db.query('DELETE FROM event_packages WHERE id = $1', [delId]);
+                    } catch (err) {
+                        console.warn(`Could not delete package ${delId} due to constraints (likely has bookings). Skipping.`);
+                    }
+                }
             }
         }
 
@@ -597,13 +628,46 @@ const updateEvent = async (req, res) => {
             [title, description, location, city, start_date, end_date, max_capacity, newStatus, newEditPerm, banner_url, JSON.stringify(finalImages), upi_id, id]
         );
 
-        // Update Packages & Schedule - Full Replace for simplicity
+        // Update Packages & Schedule - Intelligent Update
         if (packages) {
             if (typeof packages === 'string') packages = JSON.parse(packages);
-            await db.query('DELETE FROM event_packages WHERE event_id = $1', [id]);
-            for (const pkg of packages) {
-                await db.query('INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
-                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]);
+
+            // 1. Get existing packages
+            const existingPkgs = await db.query('SELECT id FROM event_packages WHERE event_id = $1', [id]);
+            const existingIds = existingPkgs.rows.map(p => p.id);
+
+            // 2. Separate updates and inserts
+            // Note: Frontend sends string IDs sometimes, ensure comparison is correct
+            const updates = packages.filter(p => p.id && existingIds.includes(parseInt(p.id)));
+            const inserts = packages.filter(p => !p.id || !existingIds.includes(parseInt(p.id)));
+            const incomingIds = updates.map(p => parseInt(p.id));
+
+            // 3. Perform Updates
+            for (const pkg of updates) {
+                await db.query(
+                    'UPDATE event_packages SET package_name=$1, price=$2, features=$3, capacity=$4 WHERE id=$5 AND event_id=$6',
+                    [pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0, pkg.id, id]
+                );
+            }
+
+            // 4. Perform Inserts
+            for (const pkg of inserts) {
+                await db.query(
+                    'INSERT INTO event_packages (event_id, package_name, price, features, capacity) VALUES ($1, $2, $3, $4, $5)',
+                    [id, pkg.name || pkg.package_name, pkg.price, pkg.features, pkg.capacity || 0]
+                );
+            }
+
+            // 5. Handle Deletions (Safely)
+            const toDelete = existingIds.filter(eid => !incomingIds.includes(eid));
+            if (toDelete.length > 0) {
+                for (const delId of toDelete) {
+                    try {
+                        await db.query('DELETE FROM event_packages WHERE id = $1', [delId]);
+                    } catch (err) {
+                        console.warn(`Could not delete package ${delId} due to constraints (likely has bookings). Skipping.`);
+                    }
+                }
             }
         }
 

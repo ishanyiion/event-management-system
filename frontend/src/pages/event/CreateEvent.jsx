@@ -113,6 +113,7 @@ const CreateEvent = () => {
                 // Fetch packages and schedule from existing data with correct mapping
                 if (event.packages) {
                     setPackages(event.packages.map(p => ({
+                        id: p.id,
                         name: p.package_name,
                         price: p.price,
                         features: p.features,
@@ -322,7 +323,15 @@ const CreateEvent = () => {
                                         type="number"
                                         className="input"
                                         value={formData.max_capacity}
-                                        onChange={(e) => setFormData({ ...formData, max_capacity: e.target.value })}
+                                        onChange={(e) => {
+                                            const newCap = e.target.value;
+                                            setFormData({ ...formData, max_capacity: newCap });
+                                            // Auto-update schedule capacity if user changes global capacity
+                                            if (schedule.length > 0) {
+                                                const newSchedule = schedule.map(s => ({ ...s, capacity: newCap }));
+                                                setSchedule(newSchedule);
+                                            }
+                                        }}
                                         required
                                     />
                                 </div>
