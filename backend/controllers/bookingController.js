@@ -91,18 +91,6 @@ const createBooking = async (req, res) => {
         const bookedDatesArray = Array.from(datesSet);
         const totalRequestedQty = flattenedItems.reduce((sum, item) => sum + item.qty, 0);
 
-        // 2. Check Event Capacity (Total tickets vs Max Capacity)
-        const confirmedBookings = await db.query(
-            'SELECT SUM(qty) as total FROM bookings WHERE event_id = $1 AND booking_status = \'CONFIRMED\'',
-            [event_id]
-        );
-        const currentQty = parseInt(confirmedBookings.rows[0].total || 0);
-
-        if (currentQty + totalRequestedQty > eventRes.rows[0].max_capacity) {
-            await db.query('ROLLBACK');
-            return res.status(400).json({ message: 'Event is fully booked or requested quantity exceeds capacity.' });
-        }
-
         // 3. Calculate Amount and Verify Package Capacities
         let total_amount = 0;
         const itemsWithDetails = [];
@@ -118,35 +106,7 @@ const createBooking = async (req, res) => {
             const price = parseFloat(pkg.price);
             const packageCapacity = parseInt(pkg.capacity || 0);
 
-            // Check package capacity
-            if (packageCapacity > 0) {
-                // Get total sold for this package across all dates (assuming capacity is total package limit)
-                // OR is capacity per day? "capacity 50" usually means 50 people can have this package total?
-                // The implementation plan says "sum of all package capacities must not exceed Event Capacity"
-                // which implies GLOBAL capacity.
-                // However, if I buy Package A for Day 1 and Package A for Day 2, does it count as 2 spots?
-                // Yes, simpler to treat capacity as absolute ticket count.
-
-                const confirmedPkgBookings = await db.query(
-                    `SELECT SUM(bi.qty) as total 
-                     FROM booking_items bi 
-                     JOIN bookings b ON bi.booking_id = b.id 
-                     WHERE bi.package_id = $1 AND b.booking_status = 'CONFIRMED'`,
-                    [item.package_id]
-                );
-                const currentPkgQty = parseInt(confirmedPkgBookings.rows[0].total || 0);
-
-                // We need to be careful not to double count if we are iterating.
-                // But here we are iterating items one by one.
-                // To do this correctly efficiently, we should sum up request per package first.
-            }
-            // Optimization: We'll do a second pass or sum map for capacity check if needed.
-            // For now, let's trust the global check + simple check (slightly inefficient but safe if concurrency low)
-            // Actually, let's just add to itemsWithDetails and check capacity later if strict.
-            // ... omitting strict strict package concurrency check optimization for brevity ...
-
-            // Re-checked logic: The initial global event capacity check covers the main constraint.
-            // Package specific capacity:
+            // 3.1 Verify Package Capacity
             if (packageCapacity > 0) {
                 let confirmedPkgBookings;
 
@@ -200,34 +160,38 @@ const createBooking = async (req, res) => {
 
             // Day-wise Capacity Check
             if (item.date) {
+                // Determine capacity for this day: 
+                // Priority: 1. Specific day capacity from event_schedules 
+                //           2. Global event max_capacity
                 const dayCapRes = await db.query(
                     'SELECT capacity FROM event_schedules WHERE event_id = $1 AND event_date = $2',
                     [event_id, item.date]
                 );
 
+                let dayCapacity = eventRes.rows[0].max_capacity; // Fallback to global
                 if (dayCapRes.rows.length > 0 && dayCapRes.rows[0].capacity > 0) {
-                    const dayCapacity = dayCapRes.rows[0].capacity;
+                    dayCapacity = dayCapRes.rows[0].capacity;
+                }
 
-                    const daySoldRes = await db.query(
-                        `SELECT SUM(bi.qty) as total FROM booking_items bi 
-                        JOIN bookings b ON bi.booking_id = b.id 
-                        WHERE b.event_id = $1 AND bi.event_date = $2 AND b.booking_status = 'CONFIRMED'`,
-                        [event_id, item.date]
-                    );
+                const daySoldRes = await db.query(
+                    `SELECT SUM(bi.qty) as total FROM booking_items bi 
+                    JOIN bookings b ON bi.booking_id = b.id 
+                    WHERE b.event_id = $1 AND bi.event_date = $2 AND b.booking_status = 'CONFIRMED'`,
+                    [event_id, item.date]
+                );
 
-                    const currentDaySold = parseInt(daySoldRes.rows[0].total || 0);
+                const currentDaySold = parseInt(daySoldRes.rows[0].total || 0);
 
-                    // Count quantity for THIS day in current cart request
-                    const cartDayQty = flattenedItems
-                        .filter(i => i.date === item.date)
-                        .reduce((s, i) => s + i.qty, 0);
+                // Count quantity for THIS day in current cart request
+                const cartDayQty = flattenedItems
+                    .filter(i => i.date === item.date)
+                    .reduce((s, i) => s + i.qty, 0);
 
-                    if (currentDaySold + cartDayQty > dayCapacity) {
-                        await db.query('ROLLBACK');
-                        return res.status(400).json({
-                            message: `Tickets for ${item.date} are sold out (Capacity: ${dayCapacity}).`
-                        });
-                    }
+                if (currentDaySold + cartDayQty > dayCapacity) {
+                    await db.query('ROLLBACK');
+                    return res.status(400).json({
+                        message: `Tickets for ${new Date(item.date).toLocaleDateString()} are sold out (Capacity: ${dayCapacity}).`
+                    });
                 }
             }
 

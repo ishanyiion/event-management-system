@@ -564,11 +564,16 @@ const updateEvent = async (req, res) => {
             }
 
             // Handle Images for proposed data
-            let finalImages = event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : [];
+            let { existingImages } = req.body;
+            if (typeof existingImages === 'string') existingImages = JSON.parse(existingImages);
+
+            let finalImages = existingImages || (event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : []);
+
             if (req.files && req.files.length > 0) {
                 const newImages = req.files.map(f => `/uploads/events/${f.filename}`);
-                finalImages = [...finalImages, ...newImages].slice(0, 5);
+                finalImages = [...finalImages, ...newImages];
             }
+            finalImages = finalImages.slice(0, 5);
             const banner_url = finalImages.length > 0 ? finalImages[0] : null;
 
             if (typeof packages === 'string') packages = JSON.parse(packages);
@@ -592,11 +597,16 @@ const updateEvent = async (req, res) => {
 
         // --- EXISTING LOGIC (For PENDING events or ADMIN edits) ---
         // Handle Images
-        let finalImages = event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : [];
+        let { existingImages } = req.body;
+        if (typeof existingImages === 'string') existingImages = JSON.parse(existingImages);
+
+        let finalImages = existingImages || (event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : []);
+
         if (req.files && req.files.length > 0) {
             const newImages = req.files.map(f => `/uploads/events/${f.filename}`);
-            finalImages = [...finalImages, ...newImages].slice(0, 5); // Keep max 5, append new ones
+            finalImages = [...finalImages, ...newImages];
         }
+        finalImages = finalImages.slice(0, 5);
 
         const banner_url = finalImages.length > 0 ? finalImages[0] : null;
 
