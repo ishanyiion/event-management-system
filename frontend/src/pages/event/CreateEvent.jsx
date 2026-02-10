@@ -342,6 +342,7 @@ const CreateEvent = () => {
                                     <input
                                         type="number"
                                         className="input"
+                                        min="1"
                                         value={formData.max_capacity}
                                         onChange={(e) => {
                                             const newCap = e.target.value;
@@ -494,6 +495,7 @@ const CreateEvent = () => {
                                                     className="input py-1 px-2 text-xs w-20"
                                                     placeholder="Cap"
                                                     title="Daily Capacity"
+                                                    min="1"
                                                     value={item.capacity}
                                                     onChange={(e) => {
                                                         const newS = [...schedule];
@@ -572,6 +574,7 @@ const CreateEvent = () => {
                                     <input
                                         type="number"
                                         className="input py-1.5"
+                                        min="0"
                                         value={pkg.price}
                                         onChange={(e) => {
                                             const newPkgs = [...packages];
@@ -587,6 +590,7 @@ const CreateEvent = () => {
                                         type="number"
                                         className="input py-1.5"
                                         placeholder="e.g., 50"
+                                        min="1"
                                         value={pkg.capacity}
                                         onChange={(e) => {
                                             const newPkgs = [...packages];

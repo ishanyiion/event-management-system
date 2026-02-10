@@ -186,16 +186,27 @@ const ReviewEdit = () => {
                             </div>
                         </div>
                     )}
-                    <div className="space-y-4">
-                        <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
-                            {isInitial ? 'Submitted Images' : 'Proposed Images'}
-                        </h4>
-                        <div className="flex gap-4 overflow-x-auto pb-2">
-                            {(proposed.images || []).map((img, idx) => (
-                                <img key={idx} src={`http://localhost:5000${img}`} className={`w-32 h-20 object-cover rounded-xl border-2 ${isInitial ? 'border-amber-200' : 'border-green-200'}`} alt="" />
-                            ))}
-                        </div>
-                    </div>
+                    {(() => {
+                        // Check if images actually changed
+                        const currentImages = !isInitial ? (event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : []) : [];
+                        const proposedImages = proposed.images || [];
+                        const imagesChanged = isInitial || JSON.stringify(currentImages) !== JSON.stringify(proposedImages);
+
+                        if (!imagesChanged && !isInitial) return null; // Don't show if no changes
+
+                        return (
+                            <div className="space-y-4">
+                                <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
+                                    {isInitial ? 'Submitted Images' : 'Proposed Images'}
+                                </h4>
+                                <div className="flex gap-4 overflow-x-auto pb-2">
+                                    {proposedImages.map((img, idx) => (
+                                        <img key={idx} src={`http://localhost:5000${img}`} className={`w-32 h-20 object-cover rounded-xl border-2 ${isInitial ? 'border-amber-200' : 'border-green-200'}`} alt="" />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -221,23 +232,49 @@ const ReviewEdit = () => {
                             </div>
                         </div>
                     )}
-                    <div className="space-y-4">
-                        <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
-                            {isInitial ? 'Submitted Packages' : 'Proposed Updates'}
-                        </h4>
-                        <div className="space-y-3">
-                            {(proposed.packages || []).map((pkg, idx) => (
-                                <div key={idx} className={`p-4 rounded-2xl border-2 text-left ${isInitial ? 'bg-amber-50 border-amber-100' : 'bg-green-50 border-green-100'}`}>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className={`font-bold ${isInitial ? 'text-amber-900' : 'text-green-900'}`}>{pkg.name || pkg.package_name}</span>
-                                        <span className={`font-black ${isInitial ? 'text-amber-950' : 'text-green-950'}`}>₹{pkg.price}</span>
-                                    </div>
-                                    <p className={`text-xs line-clamp-2 ${isInitial ? 'text-amber-700' : 'text-green-700'}`}>{pkg.features}</p>
-                                    <div className="mt-2 text-[10px] font-bold uppercase opacity-60">Cap: {pkg.capacity} tickets</div>
+                    {(() => {
+                        // Check if packages actually changed
+                        const currentPackages = !isInitial ? (event.packages || []) : [];
+                        const proposedPackages = proposed.packages || [];
+
+                        // Compare packages by stringifying relevant fields
+                        const currentPkgStr = JSON.stringify(currentPackages.map(p => ({
+                            name: p.package_name || p.name,
+                            price: String(p.price),
+                            features: p.features,
+                            capacity: String(p.capacity)
+                        })));
+                        const proposedPkgStr = JSON.stringify(proposedPackages.map(p => ({
+                            name: p.package_name || p.name,
+                            price: String(p.price),
+                            features: p.features,
+                            capacity: String(p.capacity)
+                        })));
+
+                        const packagesChanged = isInitial || currentPkgStr !== proposedPkgStr;
+
+                        if (!packagesChanged && !isInitial) return null; // Don't show if no changes
+
+                        return (
+                            <div className="space-y-4">
+                                <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
+                                    {isInitial ? 'Submitted Packages' : 'Proposed Updates'}
+                                </h4>
+                                <div className="space-y-3">
+                                    {proposedPackages.map((pkg, idx) => (
+                                        <div key={idx} className={`p-4 rounded-2xl border-2 text-left ${isInitial ? 'bg-amber-50 border-amber-100' : 'bg-green-50 border-green-100'}`}>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className={`font-bold ${isInitial ? 'text-amber-900' : 'text-green-900'}`}>{pkg.name || pkg.package_name}</span>
+                                                <span className={`font-black ${isInitial ? 'text-amber-950' : 'text-green-950'}`}>₹{pkg.price}</span>
+                                            </div>
+                                            <p className={`text-xs line-clamp-2 ${isInitial ? 'text-amber-700' : 'text-green-700'}`}>{pkg.features}</p>
+                                            <div className="mt-2 text-[10px] font-bold uppercase opacity-60">Cap: {pkg.capacity} tickets</div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
         </div>
