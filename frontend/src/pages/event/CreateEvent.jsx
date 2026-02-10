@@ -187,14 +187,27 @@ const CreateEvent = () => {
     };
 
     const removeImage = (index) => {
-        const newFiles = [...selectedFiles];
-        newFiles.splice(index, 1);
-        setSelectedFiles(newFiles);
-
         const newPreviews = [...previews];
-        URL.revokeObjectURL(newPreviews[index]);
-        newPreviews.splice(index, 1);
+        const removedPreview = newPreviews.splice(index, 1)[0];
         setPreviews(newPreviews);
+
+        // If it was a local file, remove from selectedFiles
+        // We can track this by checking if it's a blob URL
+        if (removedPreview.startsWith('blob:')) {
+            // Find which file this belongs to. 
+            // This is a bit tricky since we don't store the blob URLs in selectedFiles.
+            // Let's rely on the index relative to previews that are blobs.
+            const blobPreviewsBefore = previews.slice(0, index).filter(p => p.startsWith('blob:')).length;
+            const newFiles = [...selectedFiles];
+            newFiles.splice(blobPreviewsBefore, 1);
+            setSelectedFiles(newFiles);
+        }
+
+        // No need to manually revoke URL here if we just want to remove from state, 
+        // but it's good practice.
+        if (removedPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(removedPreview);
+        }
     };
 
     const handleRemovePackage = (index) => {
@@ -242,7 +255,14 @@ const CreateEvent = () => {
             formDataToSend.append('packages', JSON.stringify(packages));
             formDataToSend.append('schedule', JSON.stringify(schedule));
 
-            // Append images
+            // Handle Images: identify which existing ones were kept
+            const existingImages = previews
+                .filter(p => !p.startsWith('blob:'))
+                .map(p => p.replace('http://localhost:5000', '')); // Strip server prefix
+
+            formDataToSend.append('existingImages', JSON.stringify(existingImages));
+
+            // Append new images
             selectedFiles.forEach(file => {
                 formDataToSend.append('images', file);
             });

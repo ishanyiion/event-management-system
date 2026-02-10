@@ -47,10 +47,10 @@ const AdminUserDetails = () => {
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
             <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/dashboard', { state: { view: 'USERS' } })}
                 className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
             >
-                <ArrowLeft className="w-5 h-5" /> Back to Dashboard
+                <ArrowLeft className="w-5 h-5" /> Back to Users
             </button>
 
             {/* User Profile Header */}
@@ -107,7 +107,7 @@ const AdminUserDetails = () => {
                                         />
                                         <div className="absolute top-2 right-2">
                                             <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                                    item.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                                                item.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
                                                 }`}>
                                                 {item.status}
                                             </span>
@@ -163,7 +163,7 @@ const AdminUserDetails = () => {
                                     </div>
                                     <div className="shrink-0">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${item.booking_status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-                                                item.booking_status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'
+                                            item.booking_status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'
                                             }`}>
                                             {item.booking_status}
                                         </span>

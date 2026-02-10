@@ -35,8 +35,8 @@ const BookingView = () => {
     if (!booking) return (
         <div className="text-center py-20">
             <h2 className="text-2xl font-bold text-slate-900">Booking not found</h2>
-            <button onClick={() => navigate('/dashboard')} className="mt-4 text-primary-600 font-bold hover:underline flex items-center gap-2 mx-auto">
-                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            <button onClick={() => navigate('/dashboard', { state: { view: 'BOOKED' } })} className="mt-4 text-primary-600 font-bold hover:underline flex items-center gap-2 mx-auto">
+                <ArrowLeft className="w-4 h-4" /> Back to My Bookings
             </button>
         </div>
     );
@@ -72,8 +72,8 @@ const BookingView = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
-            <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
-                <ArrowLeft className="w-5 h-5" /> Back to Dashboard
+            <button onClick={() => navigate('/dashboard', { state: { view: 'BOOKED' } })} className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-900 transition-colors">
+                <ArrowLeft className="w-5 h-5" /> Back to My Bookings
             </button>
 
             <header className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-8 items-start">

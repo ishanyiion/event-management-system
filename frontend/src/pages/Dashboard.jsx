@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash, BadgeCheck, Eye } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import { getEventImage, formatEventImage } from '../utils/eventImages';
 import { showConfirm, showSuccess, showError } from '../utils/swalHelper';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
     const [stats, setStats] = useState(null);
     const [items, setItems] = useState([]);
@@ -15,7 +16,7 @@ const Dashboard = () => {
     const [users, setUsers] = useState([]);
     const [myBookings, setMyBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState('MANAGED'); // 'MANAGED' or 'BOOKED'
+    const [view, setView] = useState(location.state?.view || 'MANAGED'); // Use state from navigation if available
 
     useEffect(() => {
         const fetchData = async () => {

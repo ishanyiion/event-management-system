@@ -78,10 +78,10 @@ const ReviewEdit = () => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium"
+                onClick={() => navigate('/dashboard', { state: { view: 'REQUESTS' } })}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
             >
-                <ArrowLeft className="w-5 h-5" /> Back to Dashboard
+                <ArrowLeft className="w-5 h-5" /> Back to Requests
             </button>
 
             <header className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -170,29 +170,73 @@ const ReviewEdit = () => {
                 </div>
             </div>
 
-            {/* Packages & Schedule (Simplified for now, can be expanded) */}
+            {/* Image Comparison */}
             <div className="space-y-6">
-                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <AlertCircle className="w-6 h-6 text-amber-500" /> Structured Data Updates
+                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 font-black">
+                    <Smartphone className="w-6 h-6 text-pink-500" /> Media & Images
                 </h3>
                 <div className="grid md:grid-cols-2 gap-8">
-                    <div className="card p-6 bg-white border-2 border-slate-50 text-left">
-                        <h4 className="font-bold text-slate-400 uppercase text-[10px] tracking-widest mb-4">Packages Update</h4>
-                        <p className="text-sm text-slate-500">
-                            The organizer has proposed a full update to the event packages.
-                            <span className="block mt-2 font-bold text-indigo-600">
-                                {proposed.packages?.length} packages submitted.
-                            </span>
-                        </p>
+                    {!isInitial && (
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Current Images</h4>
+                            <div className="flex gap-4 overflow-x-auto pb-2">
+                                {(event.images ? (typeof event.images === 'string' ? JSON.parse(event.images) : event.images) : []).map((img, idx) => (
+                                    <img key={idx} src={`http://localhost:5000${img}`} className="w-32 h-20 object-cover rounded-xl border border-slate-200" alt="" />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className="space-y-4">
+                        <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
+                            {isInitial ? 'Submitted Images' : 'Proposed Images'}
+                        </h4>
+                        <div className="flex gap-4 overflow-x-auto pb-2">
+                            {(proposed.images || []).map((img, idx) => (
+                                <img key={idx} src={`http://localhost:5000${img}`} className={`w-32 h-20 object-cover rounded-xl border-2 ${isInitial ? 'border-amber-200' : 'border-green-200'}`} alt="" />
+                            ))}
+                        </div>
                     </div>
-                    <div className="card p-6 bg-white border-2 border-slate-50 text-left">
-                        <h4 className="font-bold text-slate-400 uppercase text-[10px] tracking-widest mb-4">Schedule Update</h4>
-                        <p className="text-sm text-slate-500">
-                            The organizer has proposed a full update to the event schedule sequence.
-                            <span className="block mt-2 font-bold text-indigo-600">
-                                {proposed.schedule?.length} dates/slots submitted.
-                            </span>
-                        </p>
+                </div>
+            </div>
+
+            {/* Packages & Schedule */}
+            <div className="space-y-6">
+                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 font-black">
+                    <AlertCircle className="w-6 h-6 text-primary-500" /> Packages & Pricing Review
+                </h3>
+                <div className="grid md:grid-cols-2 gap-8">
+                    {!isInitial && (
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Current Packages</h4>
+                            <div className="space-y-3">
+                                {(event.packages || []).map((pkg, idx) => (
+                                    <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-slate-700">{pkg.package_name || pkg.name}</span>
+                                            <span className="font-black text-slate-900">₹{pkg.price}</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 line-clamp-1">{pkg.features}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className="space-y-4">
+                        <h4 className={`text-xs font-black uppercase tracking-widest ${isInitial ? 'text-amber-500' : 'text-green-500'}`}>
+                            {isInitial ? 'Submitted Packages' : 'Proposed Updates'}
+                        </h4>
+                        <div className="space-y-3">
+                            {(proposed.packages || []).map((pkg, idx) => (
+                                <div key={idx} className={`p-4 rounded-2xl border-2 text-left ${isInitial ? 'bg-amber-50 border-amber-100' : 'bg-green-50 border-green-100'}`}>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className={`font-bold ${isInitial ? 'text-amber-900' : 'text-green-900'}`}>{pkg.name || pkg.package_name}</span>
+                                        <span className={`font-black ${isInitial ? 'text-amber-950' : 'text-green-950'}`}>₹{pkg.price}</span>
+                                    </div>
+                                    <p className={`text-xs line-clamp-2 ${isInitial ? 'text-amber-700' : 'text-green-700'}`}>{pkg.features}</p>
+                                    <div className="mt-2 text-[10px] font-bold uppercase opacity-60">Cap: {pkg.capacity} tickets</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
