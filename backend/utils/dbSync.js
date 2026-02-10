@@ -10,8 +10,11 @@ const schemaDefinition = {
         { name: 'name', type: 'VARCHAR(255) NOT NULL' },
         { name: 'email', type: 'VARCHAR(255) UNIQUE NOT NULL' },
         { name: 'password_hash', type: 'VARCHAR(255) NOT NULL' },
-        { name: 'role', type: 'VARCHAR(50) DEFAULT \'CLIENT\'' }, // Using VARCHAR for simplicity/compatibility
+        { name: 'role', type: 'VARCHAR(50) DEFAULT \'CLIENT\'' },
         { name: 'status', type: 'VARCHAR(50) DEFAULT \'ACTIVE\'' },
+        { name: 'mobile', type: 'VARCHAR(20)' },
+        { name: 'otp', type: 'VARCHAR(6)' },
+        { name: 'otp_expires', type: 'TIMESTAMP' },
         { name: 'created_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ],
     categories: [
@@ -34,6 +37,7 @@ const schemaDefinition = {
         { name: 'status', type: 'VARCHAR(50) DEFAULT \'PENDING\'' },
         { name: 'banner_url', type: 'VARCHAR(255)' },
         { name: 'images', type: 'TEXT' },
+        { name: 'upi_id', type: 'VARCHAR(255)' },
         { name: 'edit_permission', type: 'VARCHAR(50)' },
         { name: 'proposed_data', type: 'JSONB' },
         { name: 'created_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
@@ -43,7 +47,8 @@ const schemaDefinition = {
         { name: 'event_id', type: 'INTEGER REFERENCES events(id) ON DELETE CASCADE' },
         { name: 'event_date', type: 'DATE NOT NULL' },
         { name: 'start_time', type: 'TIME NOT NULL' },
-        { name: 'end_time', type: 'TIME NOT NULL' }
+        { name: 'end_time', type: 'TIME NOT NULL' },
+        { name: 'capacity', type: 'INTEGER DEFAULT 0' }
     ],
     event_packages: [
         { name: 'id', type: 'SERIAL PRIMARY KEY' },
@@ -69,7 +74,8 @@ const schemaDefinition = {
         { name: 'booking_id', type: 'INTEGER REFERENCES bookings(id) ON DELETE CASCADE' },
         { name: 'package_id', type: 'INTEGER REFERENCES event_packages(id) ON DELETE CASCADE' },
         { name: 'qty', type: 'INTEGER NOT NULL' },
-        { name: 'price_at_time', type: 'DECIMAL(10, 2) NOT NULL' }
+        { name: 'price_at_time', type: 'DECIMAL(10, 2) NOT NULL' },
+        { name: 'event_date', type: 'DATE' }
     ],
     payments: [
         { name: 'id', type: 'SERIAL PRIMARY KEY' },
@@ -96,6 +102,7 @@ const schemaDefinition = {
         { name: 'package_id', type: 'INTEGER REFERENCES event_packages(id) ON DELETE CASCADE' },
         { name: 'ticket_number', type: 'VARCHAR(50) UNIQUE NOT NULL' },
         { name: 'status', type: 'VARCHAR(50) DEFAULT \'VALID\'' },
+        { name: 'event_date', type: 'DATE' },
         { name: 'created_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ]
 };

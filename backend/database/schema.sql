@@ -11,6 +11,9 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role user_role DEFAULT 'CLIENT',
     status user_status DEFAULT 'ACTIVE',
+    mobile VARCHAR(20),
+    otp VARCHAR(6),
+    otp_expires TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -48,7 +51,8 @@ CREATE TABLE event_schedules (
     event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
     event_date DATE NOT NULL,
     start_time TIME NOT NULL,
-    end_time TIME NOT NULL
+    end_time TIME NOT NULL,
+    capacity INTEGER DEFAULT 0
 );
 
 -- Event Packages Table
@@ -84,7 +88,8 @@ CREATE TABLE booking_items (
     booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
     package_id INTEGER REFERENCES event_packages(id) ON DELETE CASCADE,
     qty INTEGER NOT NULL,
-    price_at_time DECIMAL(10, 2) NOT NULL
+    price_at_time DECIMAL(10, 2) NOT NULL,
+    event_date DATE
 );
 
 -- Tickets Table (Missing in original schema)
@@ -94,6 +99,7 @@ CREATE TABLE tickets (
     package_id INTEGER REFERENCES event_packages(id) ON DELETE CASCADE,
     ticket_number VARCHAR(50) UNIQUE NOT NULL,
     status VARCHAR(20) DEFAULT 'VALID',
+    event_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
