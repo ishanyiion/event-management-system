@@ -400,7 +400,7 @@ const Dashboard = () => {
                                     )}
 
                                     <div className="space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-700">Upcoming Bookings</h3>
+                                        {unpaidBookings.length > 0 && <h3 className="text-lg font-bold text-slate-700">Confirmed Bookings</h3>}
                                         <div className="space-y-4">
                                             {activeBookings.length === 0 && unpaidBookings.length === 0 ? (
                                                 <div className="card p-12 text-center text-slate-400 bg-slate-50 border-dashed border-2">No upcoming bookings.</div>
@@ -630,7 +630,7 @@ const Dashboard = () => {
                 {
                     (user.role === 'CLIENT' || view === 'BOOKED') && expiredBookings.length > 0 && (
                         <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-slate-400 border-l-4 border-slate-300 pl-3">
+                            <h3 className="text-xl font-bold text-slate-300 border-l-4 border-slate-200 pl-3">
                                 Recent History
                             </h3>
                             <div className="space-y-4 opacity-75 grayscale-[0.5] hover:grayscale-0 transition-all">
