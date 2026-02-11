@@ -468,51 +468,49 @@ const Dashboard = () => {
                                                         to={`/event/analytics/${item.id}`}
                                                         className="card p-6 flex items-center justify-between hover:border-primary-300 hover:shadow-lg transition-all border-2 border-transparent group bg-white shadow-sm"
                                                     >
-                                                        <>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                                                                    <img
-                                                                        src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
-                                                                        alt=""
-                                                                        className="w-full h-full object-cover"
-                                                                        onError={(e) => handleImageError(e, item.category_name, item.title)}
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
-                                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
-                                                                </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
+                                                                <img
+                                                                    src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => handleImageError(e, item.category_name, item.title)}
+                                                                />
                                                             </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    View Stats
-                                                                </div>
-                                                                <StatusBadge status="APPROVED" />
-                                                                <button
-                                                                    onClick={async (e) => {
-                                                                        e.preventDefault(); // Prevent navigation
-                                                                        e.stopPropagation(); // Stop bubbling to Link
-                                                                        const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
-                                                                        if (result.isConfirmed) {
-                                                                            try {
-                                                                                await api.delete(`/events/${item.id}`);
-                                                                                setItems(prev => ({
-                                                                                    ...prev,
-                                                                                    approved: prev.approved.filter(e => e.id !== item.id)
-                                                                                }));
-                                                                                showSuccess('Deleted', 'Event has been deleted successfully.');
-                                                                            } catch (err) {
-                                                                                showError('Error', err.response?.data?.message || 'Failed to delete');
-                                                                            }
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{item.title}</h4>
+                                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-[10px] font-black bg-primary-50 text-primary-600 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                View Stats
+                                                            </div>
+                                                            <StatusBadge status="APPROVED" />
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault(); // Prevent navigation
+                                                                    e.stopPropagation(); // Stop bubbling to Link
+                                                                    const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                                    if (result.isConfirmed) {
+                                                                        try {
+                                                                            await api.delete(`/events/${item.id}`);
+                                                                            setItems(prev => ({
+                                                                                ...prev,
+                                                                                approved: prev.approved.filter(e => e.id !== item.id)
+                                                                            }));
+                                                                            showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                                        } catch (err) {
+                                                                            showError('Error', err.response?.data?.message || 'Failed to delete');
                                                                         }
-                                                                    }}
-                                                                    className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                    title="Delete Event"
-                                                                >
-                                                                    <Trash className="w-5 h-5" />
-                                                                </button>
-                                                            </div>
-                                                        </>
+                                                                    }
+                                                                }}
+                                                                className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                title="Delete Event"
+                                                            >
+                                                                <Trash className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
                                                     </Link>
                                                 ))
                                             )}
@@ -531,51 +529,49 @@ const Dashboard = () => {
                                                         to={`/event/analytics/${item.id}`}
                                                         className="card p-6 flex items-center justify-between hover:border-slate-300 transition-all border-2 border-transparent group bg-white shadow-sm"
                                                     >
-                                                        <>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                                                                    <img
-                                                                        src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
-                                                                        alt=""
-                                                                        className="w-full h-full object-cover"
-                                                                        onError={(e) => handleImageError(e, item.category_name, item.title)}
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-600 group-hover:text-slate-800 transition-colors uppercase tracking-tight">{item.title}</h4>
-                                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
-                                                                </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
+                                                                <img
+                                                                    src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title)}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => handleImageError(e, item.category_name, item.title)}
+                                                                />
                                                             </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    View Stats
-                                                                </div>
-                                                                <StatusBadge status="COMPLETED" />
-                                                                <button
-                                                                    onClick={async (e) => {
-                                                                        e.preventDefault(); // Prevent navigation
-                                                                        e.stopPropagation(); // Stop bubbling to Link
-                                                                        const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
-                                                                        if (result.isConfirmed) {
-                                                                            try {
-                                                                                await api.delete(`/events/${item.id}`);
-                                                                                setItems(prev => ({
-                                                                                    ...prev,
-                                                                                    approved: prev.approved.filter(e => e.id !== item.id)
-                                                                                }));
-                                                                                showSuccess('Deleted', 'Event has been deleted successfully.');
-                                                                            } catch (err) {
-                                                                                showError('Error', err.response?.data?.message || 'Failed to delete');
-                                                                            }
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-600 group-hover:text-slate-800 transition-colors uppercase tracking-tight">{item.title}</h4>
+                                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{item.category_name} • {item.city}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                View Stats
+                                                            </div>
+                                                            <StatusBadge status="COMPLETED" />
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault(); // Prevent navigation
+                                                                    e.stopPropagation(); // Stop bubbling to Link
+                                                                    const result = await showConfirm('Delete Event?', `Are you sure you want to delete "${item.title}"? This action cannot be undone.`);
+                                                                    if (result.isConfirmed) {
+                                                                        try {
+                                                                            await api.delete(`/events/${item.id}`);
+                                                                            setItems(prev => ({
+                                                                                ...prev,
+                                                                                approved: prev.approved.filter(e => e.id !== item.id)
+                                                                            }));
+                                                                            showSuccess('Deleted', 'Event has been deleted successfully.');
+                                                                        } catch (err) {
+                                                                            showError('Error', err.response?.data?.message || 'Failed to delete');
                                                                         }
-                                                                    }}
-                                                                    className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                    title="Delete Event"
-                                                                >
-                                                                    <Trash className="w-5 h-5" />
-                                                                </button>
-                                                            </div>
-                                                        </>
+                                                                    }
+                                                                }}
+                                                                className="p-2 ml-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                title="Delete Event"
+                                                            >
+                                                                <Trash className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
                                                     </Link>
                                                 ))}
                                             </div>
@@ -687,6 +683,18 @@ const BookingCard = ({ item, navigate, expired, onRemove }) => {
                 </div>
             </div>
             <div className="flex items-center gap-4">
+                {!expired && item.payment_status === 'UNPAID' && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate(`/booking/confirm/${item.id}`);
+                        }}
+                        className="px-4 py-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105"
+                    >
+                        Pay Now
+                    </button>
+                )}
                 {onRemove && (
                     <button
                         onClick={(e) => {
