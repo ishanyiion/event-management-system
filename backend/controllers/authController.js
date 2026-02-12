@@ -2,8 +2,24 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) return 'Password must be at least 8 characters long';
+    if (!hasUpperCase) return 'Password must contain at least one uppercase letter';
+    if (!hasSpecialChar) return 'Password must contain at least one special character';
+    return null;
+};
+
 const register = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, mobile } = req.body;
+
+    // Validate mobile number (10 digits)
+    if (mobile && !/^\d{10}$/.test(mobile)) {
+        return res.status(400).json({ message: 'Mobile number must be exactly 10 digits' });
+    }
 
     try {
         // Check if user exists
@@ -13,13 +29,18 @@ const register = async (req, res) => {
         }
 
         // Hash password
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            return res.status(400).json({ message: passwordError });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Create user
         const newUser = await db.query(
             'INSERT INTO users (name, email, password_hash, role, mobile) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, mobile',
-            [name, email, hashedPassword, role || 'CLIENT', req.body.mobile]
+            [name, email, hashedPassword, role || 'CLIENT', mobile]
         );
 
         res.status(201).json(newUser.rows[0]);
@@ -99,6 +120,11 @@ const updateProfile = async (req, res) => {
         const { name, mobile } = req.body;
         const userId = req.user.id;
 
+        // Validate mobile number (10 digits)
+        if (mobile && !/^\d{10}$/.test(mobile)) {
+            return res.status(400).json({ message: 'Mobile number must be exactly 10 digits' });
+        }
+
         const result = await db.query(
             'UPDATE users SET name = $1, mobile = $2 WHERE id = $3 RETURNING id, name, email, role, mobile',
             [name, mobile, userId]
@@ -124,6 +150,11 @@ const changePassword = async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
 
         // Hash new password
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ message: passwordError });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
@@ -139,6 +170,11 @@ const changePassword = async (req, res) => {
 const sendOtp = async (req, res) => {
     try {
         const { mobile } = req.body;
+
+        // Validate mobile number (10 digits)
+        if (!mobile || !/^\d{10}$/.test(mobile)) {
+            return res.status(400).json({ message: 'Invalid mobile number. Must be 10 digits.' });
+        }
         // Check if user exists
         const userRes = await db.query('SELECT * FROM users WHERE mobile = $1', [mobile]);
         if (userRes.rows.length === 0) {
@@ -168,6 +204,11 @@ const resetPasswordWithOtp = async (req, res) => {
     try {
         const { mobile, otp, newPassword } = req.body;
 
+        // Validate mobile number (10 digits)
+        if (!mobile || !/^\d{10}$/.test(mobile)) {
+            return res.status(400).json({ message: 'Invalid mobile number. Must be 10 digits.' });
+        }
+
         const userRes = await db.query('SELECT * FROM users WHERE mobile = $1', [mobile]);
         if (userRes.rows.length === 0) return res.status(404).json({ message: 'User not found' });
 
@@ -183,6 +224,11 @@ const resetPasswordWithOtp = async (req, res) => {
         }
 
         // Hash new password
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ message: passwordError });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 

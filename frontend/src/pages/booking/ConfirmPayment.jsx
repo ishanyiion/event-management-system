@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Smartphone, ArrowRight, ShieldCheck, AlertCircle, Calendar, User, Mail, Banknote } from 'lucide-react';
+import { Smartphone, ArrowRight, ShieldCheck, AlertCircle, Calendar, User, Mail, Banknote, ArrowLeft } from 'lucide-react';
 import api from '../../utils/api';
 import { showSuccess, showError } from '../../utils/swalHelper';
 
@@ -62,6 +62,12 @@ const ConfirmPayment = () => {
 
     return (
         <div className="max-w-4xl mx-auto mt-12 space-y-8 px-4">
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold mb-4"
+            >
+                <ArrowLeft className="w-5 h-5" /> Back to Event
+            </button>
             <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
                     <Smartphone className="w-8 h-8" />

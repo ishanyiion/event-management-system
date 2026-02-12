@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Check, ArrowRight, ArrowLeft, ShieldCheck, Info, Clock, ShoppingCart, X, CheckCircle, Mail, Phone, User, Fingerprint } from 'lucide-react';
-import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import { getEventImage, formatEventImage } from '../utils/eventImages';
-import { formatTimeAMPM } from '../utils/formatTime';
-import { showError, showWarning, showConfirm, showSuccess } from '../utils/swalHelper';
+import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import { getEventImage, formatEventImage } from '../../utils/eventImages';
+import { formatTimeAMPM } from '../../utils/formatTime';
+import { showError, showWarning, showConfirm, showSuccess } from '../../utils/swalHelper';
 
 const formatDateSafe = (dateStr, options = { day: '2-digit', month: '2-digit', year: 'numeric' }) => {
     if (!dateStr || typeof dateStr !== 'string') return dateStr;
@@ -209,14 +209,12 @@ const EventDetails = () => {
 
     return (
         <div className="space-y-12">
-            {user?.role === 'ADMIN' && (
-                <button
-                    onClick={() => navigate('/dashboard', { state: { view: 'MANAGED' } })}
-                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
-                >
-                    <ArrowLeft className="w-5 h-5" /> Back to Managed Events
-                </button>
-            )}
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
+            >
+                <ArrowLeft className="w-5 h-5" /> Go Back
+            </button>
             {event.status === 'PENDING' && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm animate-pulse">
                     <div className="flex items-center gap-4">
