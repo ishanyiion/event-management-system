@@ -28,7 +28,7 @@ export const getEventImage = (category, title) => {
     const categoryMap = {
         'wedding': '1511795409834-ef04bbd61622',
         'corporate': '1505373877841-8d25f7d46678',
-        'music': '1470225620800-ad1d5ec71412',
+        'music': '1501612722-b1d428a1ea55', // High-quality concert image
         'birthday': '1530103043440-ad2a2016584c',
         'workshop': '1524178232363-1fb2b075b655',
         'tech conference': '1504384308090-c894fdcc538d',
@@ -40,6 +40,12 @@ export const getEventImage = (category, title) => {
     };
 
     const catKey = category?.toLowerCase().trim() || '';
+
+    // Special Override for Garba (using user's specific high-quality asset)
+    if (catKey === 'garba') {
+        return formatEventImage('/uploads/events/event-1770876199038-756427166.webp');
+    }
+
     let photoId = categoryMap[catKey];
 
     // 3. Keyword Based Fallbacks (if no exact match)

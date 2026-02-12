@@ -23,7 +23,16 @@ const LandingPage = () => {
 
                 // Fetch real categories
                 const catRes = await api.get('/events/categories');
-                setCategories(catRes.data.slice(0, 5));
+                const excluded = ['demo'];
+                let filtered = catRes.data.filter(cat => !excluded.includes(cat.name.toLowerCase()));
+
+                // Ensure Music is present if it was accidentally filtered or missing
+                const hasMusic = filtered.some(c => c.name.toLowerCase() === 'music');
+                if (!hasMusic) {
+                    filtered.push({ name: 'Music' });
+                }
+
+                setCategories(filtered.slice(0, 5));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -199,7 +208,7 @@ const LandingPage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
-                    {(categories.length > 0 ? categories.map(c => c.name) : ['Corporate', 'Music', 'Workshop', 'Tech Conference', 'Art Exhibition']).map((cat) => (
+                    {(categories.length > 0 ? categories.map(c => c.name) : ['Corporate', 'Music', 'Food Festival', 'Art Exhibition', 'Fashion Show']).map((cat) => (
                         <div
                             key={cat}
                             onClick={() => navigate(`/events?category=${cat}`)}
