@@ -209,14 +209,12 @@ const EventDetails = () => {
 
     return (
         <div className="space-y-12">
-            {user?.role === 'ADMIN' && (
-                <button
-                    onClick={() => navigate('/dashboard', { state: { view: 'MANAGED' } })}
-                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
-                >
-                    <ArrowLeft className="w-5 h-5" /> Back to Managed Events
-                </button>
-            )}
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
+            >
+                <ArrowLeft className="w-5 h-5" /> Go Back
+            </button>
             {event.status === 'PENDING' && (
                 <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm animate-pulse">
                     <div className="flex items-center gap-4">

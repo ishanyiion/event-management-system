@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import { showSuccess, showError } from '../../utils/swalHelper';
-import { User, Lock, Mail, Phone, Shield, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { User, Lock, Mail, Phone, Shield, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const { user, updateUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
@@ -83,6 +85,12 @@ const Profile = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
+            <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-semibold"
+            >
+                <ArrowLeft className="w-5 h-5" /> Back to Dashboard
+            </button>
             <h1 className="text-3xl font-bold text-slate-900">My Profile</h1>
 
             <div className="grid md:grid-cols-2 gap-8">

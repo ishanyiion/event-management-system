@@ -163,9 +163,14 @@ const Dashboard = () => {
                             </button>
                             <button
                                 onClick={() => setView('BOOKED')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${view === 'BOOKED' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${view === 'BOOKED' ? 'bg-white text-primary-600 shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 My Bookings
+                                {myBookings.filter(i => i.payment_status === 'UNPAID' && !isExpired(i.booked_date)).length > 0 && (
+                                    <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                        {myBookings.filter(i => i.payment_status === 'UNPAID' && !isExpired(i.booked_date)).length}
+                                    </span>
+                                )}
                             </button>
                             {user.role === 'ADMIN' && (
                                 <>
