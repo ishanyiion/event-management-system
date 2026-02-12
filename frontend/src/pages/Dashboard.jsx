@@ -141,7 +141,7 @@ const Dashboard = () => {
                         <h1 className="text-3xl font-bold text-slate-900 capitalize">{user.role.toLowerCase()} Dashboard</h1>
                         {user.role === 'ADMIN' && <BadgeCheck className="w-8 h-8 text-blue-500 fill-blue-50" />}
                     </div>
-                    <p className="text-slate-500">Welcome back, {user.name}!</p>
+                    <p className="text-slate-500">Welcome back, {user.name}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {(user.role === 'ADMIN' || user.role === 'ORGANIZER') && (
