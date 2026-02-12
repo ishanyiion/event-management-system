@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Check, ArrowRight, ArrowLeft, ShieldCheck, Info, Clock, ShoppingCart, X, CheckCircle, Mail, Phone, User, Fingerprint } from 'lucide-react';
-import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import { getEventImage, formatEventImage } from '../utils/eventImages';
-import { formatTimeAMPM } from '../utils/formatTime';
-import { showError, showWarning, showConfirm, showSuccess } from '../utils/swalHelper';
+import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import { getEventImage, formatEventImage } from '../../utils/eventImages';
+import { formatTimeAMPM } from '../../utils/formatTime';
+import { showError, showWarning, showConfirm, showSuccess } from '../../utils/swalHelper';
 
 const formatDateSafe = (dateStr, options = { day: '2-digit', month: '2-digit', year: 'numeric' }) => {
     if (!dateStr || typeof dateStr !== 'string') return dateStr;

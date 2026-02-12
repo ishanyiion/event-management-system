@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Banknote, Clock, ArrowLeft, Info, X, ShieldCheck } from 'lucide-react';
-import api from '../utils/api';
-import { formatTimeAMPM } from '../utils/formatTime';
+import { Calendar, MapPin, Users, Banknote, Clock, ArrowLeft, Info, X, ShieldCheck, CheckCircle } from 'lucide-react';
+import api from '../../utils/api';
+import { formatTimeAMPM } from '../../utils/formatTime';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 const EventAnalytics = () => {
     const { id } = useParams();
@@ -302,25 +303,5 @@ const StatCard = ({ label, value, icon, color, bg }) => (
     </div>
 );
 
-const StatusBadge = ({ status, sm }) => {
-    const styles = {
-        APPROVED: 'bg-green-100 text-green-700',
-        PENDING: 'bg-amber-100 text-amber-700',
-        CANCELLED: 'bg-slate-100 text-slate-500',
-        PAID: 'bg-green-100 text-green-700',
-        UNPAID: 'bg-amber-100 text-amber-700',
-        FAILED: 'bg-red-100 text-red-700',
-    };
-    return (
-        <span className={`${sm ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} rounded-full font-black tracking-wide uppercase ${styles[status] || 'bg-slate-100'}`}>
-            {status}
-        </span>
-    );
-};
-
-// Internal Lucide icon missing in standard import
-const CheckCircle = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-);
 
 export default EventAnalytics;

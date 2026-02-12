@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Search, MapPin, Calendar, ArrowRight, Clock } from 'lucide-react';
-import { getEventImage, formatEventImage } from '../utils/eventImages';
-import api from '../utils/api';
+import { getEventImage, formatEventImage } from '../../utils/eventImages';
+import api from '../../utils/api';
 
 const LandingPage = () => {
     const navigate = useNavigate();

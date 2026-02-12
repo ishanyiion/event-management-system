@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash, BadgeCheck, Eye } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import api from '../utils/api';
-import { getEventImage, formatEventImage } from '../utils/eventImages';
-import { showConfirm, showSuccess, showError } from '../utils/swalHelper';
+import api from '../../utils/api';
+import { getEventImage, formatEventImage } from '../../utils/eventImages';
+import { showConfirm, showSuccess, showError } from '../../utils/swalHelper';
+import StatusBadge from '../../components/ui/StatusBadge';
+import OrganizerEventCard from '../../components/dashboard/OrganizerEventCard';
+import BookingCard from '../../components/dashboard/BookingCard';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -646,173 +649,5 @@ const Dashboard = () => {
     );
 };
 
-const BookingCard = ({ item, navigate, expired, onRemove }) => {
-    const handleImageError = (e, category, title) => {
-        e.target.src = getEventImage(category, title);
-    };
-
-    return (
-        <Link
-            to={`/booking/view/${item.id}`}
-            className={`card p-6 flex items-center justify-between transition-all border-2 shadow-sm ${expired
-                ? 'opacity-80 border-slate-100'
-                : 'hover:border-primary-300 hover:shadow-lg border-transparent'
-                }`}
-        >
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center ${expired ? 'bg-slate-200' : 'bg-slate-100'}`}>
-                    <img
-                        src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title || item.event_title)}
-                        alt=""
-                        className={`w-full h-full object-cover ${expired ? 'opacity-50' : ''}`}
-                        onError={(e) => handleImageError(e, item.category_name, item.title || item.event_title)}
-                    />
-                </div>
-                <div>
-                    <h4 className={`font-black uppercase tracking-tight ${expired ? 'text-slate-500' : 'text-slate-900'}`}>{item.title || item.event_title}</h4>
-                    <p className="text-sm text-slate-500 line-clamp-1">
-                        <span className={`font-black mr-2 ${expired ? 'text-slate-400' : 'text-primary-600'}`}>
-                            {item.booked_date ?
-                                item.booked_date.split(',').map(d => {
-                                    const [y, m, day] = d.split('-');
-                                    return `${day}/${m}/${y}`;
-                                }).join(', ')
-                                : 'N/A'}
-                        </span>
-                    </p>
-                </div>
-            </div>
-            <div className="flex items-center gap-4">
-                {!expired && item.payment_status === 'UNPAID' && (
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigate(`/booking/confirm/${item.id}`);
-                        }}
-                        className="px-4 py-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-md hover:shadow-lg hover:scale-105"
-                    >
-                        Pay Now
-                    </button>
-                )}
-                {onRemove && (
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onRemove();
-                        }}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        title="Remove Request"
-                    >
-                        <Trash className="w-5 h-5" />
-                    </button>
-                )}
-                <StatusBadge status={expired ? 'ENDED' : (item.payment_status === 'PAID' ? 'PAID' : (item.status || item.booking_status))} />
-            </div>
-        </Link>
-    );
-};
-
-
-const StatusBadge = ({ status }) => {
-    const styles = {
-        APPROVED: 'bg-green-100 text-green-700',
-        CONFIRMED: 'bg-green-100 text-green-700',
-        PENDING: 'bg-amber-100 text-amber-700',
-        REJECTED: 'bg-red-100 text-red-700',
-        CANCELLED: 'bg-slate-100 text-slate-700',
-        ENDED: 'bg-slate-200 text-slate-500',
-        UNPAID: 'bg-amber-100 text-amber-700',
-        PAID: 'bg-green-500 text-white shadow-green-200 shadow-md', // Highlighted style for PAID
-        ACTIVE: 'bg-green-100 text-green-700',
-        BLOCKED: 'bg-red-100 text-red-700',
-        COMPLETED: 'bg-amber-500 text-white shadow-amber-200 shadow-md', // Matching user request for "COMPLETED" style
-    };
-    return (
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${styles[status] || 'bg-slate-100'}`}>
-            {status}
-        </span>
-    );
-};
-
-const OrganizerEventCard = ({ item, items, setItems, navigate }) => {
-    const handleImageError = (e, category, title) => {
-        e.target.src = getEventImage(category, title);
-    };
-
-    return (
-        <div key={item.id} className="relative group">
-            <Link
-                to={`/event/analytics/${item.id}`}
-                className="card p-6 flex items-center justify-between hover:border-primary-300 hover:shadow-lg transition-all border-2 border-transparent bg-white shadow-sm"
-            >
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center text-slate-400">
-                        <img
-                            src={formatEventImage(item.banner_url) || getEventImage(item.category_name, item.title || item.event_title)}
-                            alt=""
-                            className="w-full h-full object-cover uppercase"
-                            onError={(e) => handleImageError(e, item.category_name, item.title || item.event_title)}
-                        />
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">
-                            {item.title || item.event_title}
-                        </h4>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                            {item.city}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <StatusBadge status={item.status || item.booking_status} />
-                    {item.status === 'APPROVED' && (
-                        <>
-                            {item.edit_permission === 'SUBMITTED' ? (
-                                <button
-                                    disabled
-                                    className="px-4 py-2 text-xs font-bold text-blue-400 bg-blue-50 rounded-xl border border-blue-100 cursor-not-allowed"
-                                >
-                                    Review Pending
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        navigate(`/edit-event/${item.id}`);
-                                    }}
-                                    className="px-4 py-2 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 shadow-sm transition-all hover:scale-105"
-                                >
-                                    Propose Edits
-                                </button>
-                            )}
-                        </>
-                    )}
-                    <button
-                        onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const result = await showConfirm('Delete Event?', 'Are you sure you want to delete this event? This action cannot be undone.');
-                            if (result.isConfirmed) {
-                                try {
-                                    await api.delete(`/events/${item.id}`);
-                                    setItems(items.filter(i => i.id !== item.id));
-                                    showSuccess('Deleted', 'Event has been deleted successfully.');
-                                } catch (err) {
-                                    showError('Delete Failed', err.response?.data?.message || 'Failed to delete event.');
-                                }
-                            }
-                        }}
-                        className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 z-10"
-                    >
-                        Delete
-                    </button>
-                </div>
-            </Link>
-        </div>
-    );
-};
 
 export default Dashboard;
