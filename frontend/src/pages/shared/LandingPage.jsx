@@ -141,7 +141,7 @@ const LandingPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="w-4 h-4 text-primary-500" />
-                                                    <span>{new Date(event.start_date).toLocaleDateString('en-GB')}</span>
+                                                    <span>{new Date(event.start_date).toLocaleDateString('en-GB')} - {new Date(event.end_date).toLocaleDateString('en-GB')}</span>
                                                 </div>
                                             </div>
                                             <p className="text-slate-400 line-clamp-2 text-sm leading-relaxed">

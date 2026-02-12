@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash, BadgeCheck, Eye } from 'lucide-react';
+import { Plus, Users, Calendar, Banknote, Clock, CheckCircle, XCircle, Trash, BadgeCheck, Eye, Search } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import { getEventImage, formatEventImage } from '../../utils/eventImages';
@@ -20,6 +20,7 @@ const Dashboard = () => {
     const [myBookings, setMyBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState(location.state?.view || 'MANAGED'); // Use state from navigation if available
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -271,6 +272,18 @@ const Dashboard = () => {
                         ) :
                             view === 'USERS' ? (
                                 <div className="space-y-12">
+                                    {/* Search Bar */}
+                                    <div className="relative max-w-md">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search by name or email..."
+                                            className="input pl-12 h-12 bg-white shadow-sm border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-primary-500 rounded-2xl"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+
                                     <div className="space-y-6 text-left">
                                         <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
                                             <Users className="w-5 h-5 text-primary-500" /> Platform Organizers
@@ -286,7 +299,10 @@ const Dashboard = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {users.filter(u => u.role === 'ORGANIZER').map((u) => (
+                                                        {users.filter(u => u.role === 'ORGANIZER' && (
+                                                            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                                        )).map((u) => (
                                                             <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                                                                 <td className="px-6 py-4">
                                                                     <div>
@@ -318,11 +334,14 @@ const Dashboard = () => {
                                                                 </td>
                                                             </tr>
                                                         ))}
-                                                        {users.filter(u => u.role === 'ORGANIZER').length === 0 && (
-                                                            <tr>
-                                                                <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No organizers found.</td>
-                                                            </tr>
-                                                        )}
+                                                        {users.filter(u => u.role === 'ORGANIZER' && (
+                                                            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                                        )).length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No organizers found.</td>
+                                                                </tr>
+                                                            )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -344,7 +363,10 @@ const Dashboard = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {users.filter(u => u.role === 'CLIENT').map((u) => (
+                                                        {users.filter(u => u.role === 'CLIENT' && (
+                                                            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                                        )).map((u) => (
                                                             <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                                                                 <td className="px-6 py-4">
                                                                     <div>
@@ -376,11 +398,14 @@ const Dashboard = () => {
                                                                 </td>
                                                             </tr>
                                                         ))}
-                                                        {users.filter(u => u.role === 'CLIENT').length === 0 && (
-                                                            <tr>
-                                                                <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No clients found.</td>
-                                                            </tr>
-                                                        )}
+                                                        {users.filter(u => u.role === 'CLIENT' && (
+                                                            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                                            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                                        )).length === 0 && (
+                                                                <tr>
+                                                                    <td colSpan="3" className="px-6 py-12 text-center text-slate-400 bg-slate-50/50">No clients found.</td>
+                                                                </tr>
+                                                            )}
                                                     </tbody>
                                                 </table>
                                             </div>
