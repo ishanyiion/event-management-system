@@ -28,6 +28,16 @@ const RegisterPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (formData.mobile && (formData.mobile.length !== 10 || !/^\d+$/.test(formData.mobile))) {
+            return setError('Mobile number must be exactly 10 digits');
+        }
+
+        const password = formData.password;
+        if (password.length < 8) return setError('Password must be at least 8 characters long');
+        if (!/[A-Z]/.test(password)) return setError('Password must contain at least one uppercase letter');
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return setError('Password must contain at least one special character');
+
         setLoading(true);
         try {
             await api.post('/auth/register', { ...formData, role });
@@ -108,10 +118,16 @@ const RegisterPage = () => {
                             <Phone className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input
                                 type="tel"
-                                placeholder="+91 9876543210"
+                                placeholder="Mobile Number (10 digits)"
                                 className="input pl-10"
+                                maxLength={10}
                                 value={formData.mobile}
-                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    if (val.length <= 10) {
+                                        setFormData({ ...formData, mobile: val });
+                                    }
+                                }}
                                 required
                             />
                         </div>

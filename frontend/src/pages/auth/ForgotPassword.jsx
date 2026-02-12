@@ -22,6 +22,9 @@ const ForgotPassword = () => {
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
+        if (mobile.length !== 10 || !/^\d+$/.test(mobile)) {
+            return showError('Invalid Mobile', 'Mobile number must be exactly 10 digits');
+        }
         setLoading(true);
         try {
             await api.post('/auth/sent-otp', { mobile });
@@ -39,6 +42,11 @@ const ForgotPassword = () => {
         if (passwords.new !== passwords.confirm) {
             return showError('Error', 'Passwords do not match');
         }
+
+        const password = passwords.new;
+        if (password.length < 8) return showError('Invalid Password', 'Password must be at least 8 characters long');
+        if (!/[A-Z]/.test(password)) return showError('Invalid Password', 'Password must contain at least one uppercase letter');
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return showError('Invalid Password', 'Password must contain at least one special character');
 
         setLoading(true);
         try {
@@ -79,10 +87,16 @@ const ForgotPassword = () => {
                                 <Phone className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                                 <input
                                     type="tel"
-                                    placeholder="+91 9876543210"
+                                    placeholder="Mobile Number (10 digits)"
                                     className="input pl-10"
+                                    maxLength={10}
                                     value={mobile}
-                                    onChange={(e) => setMobile(e.target.value)}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 10) {
+                                            setMobile(val);
+                                        }
+                                    }}
                                     required
                                 />
                             </div>
@@ -123,7 +137,7 @@ const ForgotPassword = () => {
                                     type={showPasswords.new ? "text" : "password"}
                                     placeholder="••••••••"
                                     className="input pl-10 pr-10"
-                                    minLength={6}
+                                    minLength={8}
                                     value={passwords.new}
                                     onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
                                     required
@@ -146,7 +160,7 @@ const ForgotPassword = () => {
                                     type={showPasswords.confirm ? "text" : "password"}
                                     placeholder="••••••••"
                                     className="input pl-10 pr-10"
-                                    minLength={6}
+                                    minLength={8}
                                     value={passwords.confirm}
                                     onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                                     required

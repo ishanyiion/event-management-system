@@ -39,6 +39,11 @@ const Profile = () => {
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         setLoading(true);
+        if (profile.mobile && (profile.mobile.length !== 10 || !/^\d+$/.test(profile.mobile))) {
+            setLoading(false);
+            return showError('Invalid Mobile', 'Mobile number must be exactly 10 digits');
+        }
+
         try {
             const res = await api.put('/auth/profile', profile);
             updateUser(res.data);
@@ -55,6 +60,11 @@ const Profile = () => {
         if (passwords.newPassword !== passwords.confirmPassword) {
             return showError('Error', 'New passwords do not match');
         }
+
+        const password = passwords.newPassword;
+        if (password.length < 8) return showError('Invalid Password', 'Password must be at least 8 characters long');
+        if (!/[A-Z]/.test(password)) return showError('Invalid Password', 'Password must contain at least one uppercase letter');
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return showError('Invalid Password', 'Password must contain at least one special character');
 
         setLoading(true);
         try {
@@ -133,9 +143,15 @@ const Profile = () => {
                                     <input
                                         type="tel"
                                         className="input pl-10"
-                                        placeholder="+91 9876543210"
+                                        placeholder="Mobile Number (10 digits)"
+                                        maxLength={10}
                                         value={profile.mobile}
-                                        onChange={(e) => setProfile({ ...profile, mobile: e.target.value })}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 10) {
+                                                setProfile({ ...profile, mobile: val });
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -185,7 +201,7 @@ const Profile = () => {
                                     type={showPasswords.new ? "text" : "password"}
                                     required
                                     className="input pr-10"
-                                    minLength={6}
+                                    minLength={8}
                                     value={passwords.newPassword}
                                     onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
                                 />
@@ -206,7 +222,7 @@ const Profile = () => {
                                     type={showPasswords.confirm ? "text" : "password"}
                                     required
                                     className="input pr-10"
-                                    minLength={6}
+                                    minLength={8}
                                     value={passwords.confirmPassword}
                                     onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
                                 />
