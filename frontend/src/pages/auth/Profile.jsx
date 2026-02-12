@@ -5,7 +5,7 @@ import { showSuccess, showError } from '../../utils/swalHelper';
 import { User, Lock, Mail, Phone, Shield, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const Profile = () => {
-    const { user, login } = useAuth(); // login used to update user context
+    const { user, updateUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
     // Profile State
@@ -41,20 +41,7 @@ const Profile = () => {
         setLoading(true);
         try {
             const res = await api.put('/auth/profile', profile);
-            // Update local user context (hacky but works if login updates state, 
-            // ideally AuthContext exposes a setUser or updateProfile method.
-            // For now, we assume user object matches login response structure mostly)
-
-            // Re-fetch me to ensure context is in sync if needed, or manually update
-            // Ideally we need a method in AuthContext to update user data without full login
-            // For now let's just show success. 
-            // NOTE: The UI header might not update immediately without context refresh.
-            // Check if login() accepts a user object to overwrite? Layout of AuthContext unknown.
-            // Assuming we might need to reload or just let it accept the new user object if possible.
-            // Let's rely on a page refresh or similar if context update isn't available.
-            // Actually, best check:
-            // But let's verify context first. For now, simple update.
-
+            updateUser(res.data);
             showSuccess('Profile Updated', 'Your profile details have been updated.');
         } catch (err) {
             showError('Update Failed', err.response?.data?.message || 'Failed to update profile');

@@ -76,6 +76,7 @@ const CreateEvent = () => {
     const [error, setError] = useState('');
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
+    const [selectedPreview, setSelectedPreview] = useState(null); // Modal state
 
     useEffect(() => {
         const fetchCats = async () => {
@@ -392,12 +393,15 @@ const CreateEvent = () => {
                         <div className="space-y-4">
                             <div className="grid grid-cols-3 gap-4">
                                 {previews.map((src, index) => (
-                                    <div key={index} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 group">
+                                    <div key={index} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 group cursor-pointer" onClick={() => setSelectedPreview(src)}>
                                         <img src={src} className="w-full h-full object-cover" alt="" />
                                         <button
                                             type="button"
-                                            onClick={() => removeImage(index)}
-                                            className="absolute top-1 right-1 bg-white/80 backdrop-blur p-1 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeImage(index);
+                                            }}
+                                            className="absolute top-1 right-1 bg-white/80 backdrop-blur p-1 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                         >
                                             <Trash className="w-3 h-3" />
                                         </button>
@@ -490,19 +494,6 @@ const CreateEvent = () => {
                                                 {new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                             </div>
                                             <div className="flex items-center gap-2 flex-1">
-                                                <input
-                                                    type="number"
-                                                    className="input py-1 px-2 text-xs w-20"
-                                                    placeholder="Cap"
-                                                    title="Daily Capacity"
-                                                    min="1"
-                                                    value={item.capacity}
-                                                    onChange={(e) => {
-                                                        const newS = [...schedule];
-                                                        newS[idx].capacity = e.target.value;
-                                                        setSchedule(newS);
-                                                    }}
-                                                />
                                                 <TimeInput12h
                                                     value={item.startTime}
                                                     onChange={(val) => {
@@ -631,6 +622,29 @@ const CreateEvent = () => {
                     </button>
                 </div>
             </form>
+
+            {/* Image Preview Modal */}
+            {selectedPreview && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-300"
+                    onClick={() => setSelectedPreview(null)}
+                >
+                    <div className="relative w-full h-full flex items-center justify-center p-4 md:p-12">
+                        <button
+                            className="fixed top-4 right-4 md:top-8 md:right-8 text-white/70 hover:text-white transition-colors flex items-center gap-2 font-bold bg-slate-800/50 backdrop-blur-md p-3 rounded-full hover:bg-slate-700/80 z-[60]"
+                            onClick={() => setSelectedPreview(null)}
+                            title="Close preview"
+                        >
+                            <X className="w-8 h-8 md:w-10 md:h-10" />
+                        </button>
+                        <img
+                            src={selectedPreview}
+                            alt="Preview"
+                            className="w-full h-full object-contain rounded-xl shadow-2xl zoom-in animate-in duration-300 pointer-events-none"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
