@@ -106,19 +106,22 @@ const EventAnalytics = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-2 gap-2">
                                             <div className="bg-slate-100 p-2 rounded-xl text-center">
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Daily Limit</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase">Limit / Day</p>
                                                 <p className="font-bold text-slate-700">{pkg.capacity || '∞'}</p>
                                             </div>
                                             <div className="bg-green-50 p-2 rounded-xl text-center">
                                                 <p className="text-[10px] text-green-400 font-bold uppercase">Total Sold</p>
                                                 <p className="font-bold text-green-700">{pkg.sold_qty}</p>
                                             </div>
+                                            <div className="bg-blue-50 p-2 rounded-xl text-center">
+                                                <p className="text-[10px] text-blue-400 font-bold uppercase">Total Capacity</p>
+                                                <p className="font-bold text-blue-700">
+                                                    {pkg.capacity ? (pkg.capacity * (data.dailyStats?.length || 1)) : '∞'}
+                                                </p>
+                                            </div>
                                             <div className="bg-amber-50 p-2 rounded-xl text-center">
-                                                {/* Since limit is daily, 'Total Left' is ambiguous. Showing 'Today Left' would require today's date context. 
-                                                    Instead, implies availability per day. Cleanest is to remove Global Left or show 'Daily Left' if we knew the day. 
-                                                    Let's show 'Revenue' here instead or keep it empty/different stat. */}
                                                 <p className="text-[10px] text-amber-400 font-bold uppercase">Status</p>
                                                 <p className="font-bold text-amber-700 text-xs py-1">ACTIVE</p>
                                             </div>
