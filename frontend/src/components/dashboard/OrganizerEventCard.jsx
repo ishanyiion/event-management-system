@@ -6,6 +6,13 @@ import api from '../../utils/api';
 import StatusBadge from '../ui/StatusBadge';
 
 const OrganizerEventCard = ({ item, items, setItems, navigate }) => {
+    const isEventPast = (dateStr) => {
+        if (!dateStr) return false;
+        const end = new Date(dateStr);
+        end.setHours(23, 59, 59, 999);
+        return end < new Date();
+    };
+
     const handleImageError = (e, category, title) => {
         e.target.src = getEventImage(category, title);
     };
@@ -36,7 +43,7 @@ const OrganizerEventCard = ({ item, items, setItems, navigate }) => {
                 </div>
                 <div className="flex items-center gap-4">
                     <StatusBadge status={item.status || item.booking_status} />
-                    {item.status === 'APPROVED' && (
+                    {item.status === 'APPROVED' && !isEventPast(item.end_date) && (
                         <>
                             {item.edit_permission === 'SUBMITTED' ? (
                                 <button
