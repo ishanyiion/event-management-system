@@ -4,6 +4,9 @@ import { Search, MapPin, Calendar, ArrowRight, Clock } from 'lucide-react';
 import { getEventImage, formatEventImage } from '../../utils/eventImages';
 import api from '../../utils/api';
 
+import ClientExperience from '../../components/shared/ClientExperience';
+import OrganizerExperience from '../../components/shared/OrganizerExperience';
+
 const LandingPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
@@ -220,36 +223,11 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Why Choose Us */}
-            <section className="bg-slate-900 text-white rounded-3xl p-12 lg:p-20 overflow-hidden relative">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-6">
-                        <h2 className="text-4xl font-bold">Manage Your Events Effortlessly</h2>
-                        <p className="text-slate-400 text-lg">
-                            Our platform provides powerful tools for organizers to create, manage, and scale their events while offering clients a seamless booking experience.
-                        </p>
-                        <ul className="space-y-4">
-                            {['Role-Based Access Control', 'Capacity Validation', 'UPI Payment Integration', 'Real-time Analytics'].map((feature) => (
-                                <li key={feature} className="flex items-center gap-3 text-slate-200">
-                                    <div className="w-2 h-2 bg-primary-500 rounded-full" />
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-                        <button
-                            onClick={() => navigate('/register?role=ORGANIZER')}
-                            className="btn-primary mt-4"
-                        >
-                            Join as Organizer
-                        </button>
-                    </div>
-                    <div className="hidden lg:block">
-                        <div className="bg-gradient-to-tr from-primary-500/20 to-primary-500/5 aspect-square rounded-full flex items-center justify-center">
-                            <div className="w-3/4 h-3/4 bg-slate-800 rounded-3xl border border-slate-700 shadow-2xl" />
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {/* Organizer Experience Section */}
+            <OrganizerExperience />
+
+            {/* Client Experience Section */}
+            <ClientExperience />
         </div>
     );
 };
