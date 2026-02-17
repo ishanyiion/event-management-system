@@ -396,12 +396,6 @@ const requestEditAccess = async (req, res) => {
             return res.status(400).json({ message: 'Only approved/active events need edit permission.' });
         }
 
-        const end = new Date(event.end_date);
-        end.setHours(23, 59, 59, 999);
-        if (end < new Date()) {
-            return res.status(400).json({ message: "Finished events cannot be edited." });
-        }
-
         await db.query("UPDATE events SET edit_permission = 'REQUESTED' WHERE id = $1", [id]);
         res.json({ message: 'Edit permission requested' });
     } catch (err) {
@@ -563,15 +557,6 @@ const updateEvent = async (req, res) => {
         }
 
         // --- PROPOSED CHANGE LOGIC ---
-        if (req.user.role === 'ORGANIZER') {
-            // Check if event is past for ALL organizer edits
-            const end = new Date(event.end_date);
-            end.setHours(23, 59, 59, 999);
-            if (end < new Date()) {
-                return res.status(400).json({ message: "Finished events cannot be edited." });
-            }
-        }
-
         if (req.user.role === 'ORGANIZER' && event.status === 'APPROVED') {
             // No longer checking for GRANTED. Organizers can propose changes directly.
             if (event.edit_permission === 'SUBMITTED') {
