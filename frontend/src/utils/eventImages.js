@@ -46,6 +46,11 @@ export const getEventImage = (category, title) => {
         return formatEventImage('/uploads/events/event-1770876199038-756427166.webp');
     }
 
+    // Special Override for Car Expo
+    if (catKey === 'car expo') {
+        return '/assets/images/categories/car-expo.jpg';
+    }
+
     let photoId = categoryMap[catKey];
 
     // 3. Keyword Based Fallbacks (if no exact match)
