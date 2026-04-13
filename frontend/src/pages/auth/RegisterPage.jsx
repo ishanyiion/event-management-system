@@ -29,6 +29,14 @@ const RegisterPage = () => {
         e.preventDefault();
         setError('');
 
+        // Validate name (only letters and spaces)
+        if (!/^[A-Za-z\s]+$/.test(formData.name.trim())) {
+            return setError('Name can only contain letters and spaces');
+        }
+        if (formData.name.trim().length < 2) {
+            return setError('Name must be at least 2 characters long');
+        }
+
         if (formData.mobile && (formData.mobile.length !== 10 || !/^\d+$/.test(formData.mobile))) {
             return setError('Mobile number must be exactly 10 digits');
         }
@@ -91,7 +99,10 @@ const RegisterPage = () => {
                                 placeholder="John Doe"
                                 className="input pl-10"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                    setFormData({ ...formData, name: val });
+                                }}
                                 required
                             />
                         </div>

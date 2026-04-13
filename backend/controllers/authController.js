@@ -16,6 +16,11 @@ const validatePassword = (password) => {
 const register = async (req, res) => {
     const { name, email, password, role, mobile } = req.body;
 
+    // Validate name (only letters and spaces, min 2 chars)
+    if (!name || !/^[A-Za-z\s]+$/.test(name.trim()) || name.trim().length < 2) {
+        return res.status(400).json({ message: 'Name can only contain letters and spaces (minimum 2 characters)' });
+    }
+
     // Validate mobile number (10 digits)
     if (mobile && !/^\d{10}$/.test(mobile)) {
         return res.status(400).json({ message: 'Mobile number must be exactly 10 digits' });
@@ -119,6 +124,11 @@ const updateProfile = async (req, res) => {
     try {
         const { name, mobile } = req.body;
         const userId = req.user.id;
+
+        // Validate name (only letters and spaces, min 2 chars)
+        if (!name || !/^[A-Za-z\s]+$/.test(name.trim()) || name.trim().length < 2) {
+            return res.status(400).json({ message: 'Name can only contain letters and spaces (minimum 2 characters)' });
+        }
 
         // Validate mobile number (10 digits)
         if (mobile && !/^\d{10}$/.test(mobile)) {
